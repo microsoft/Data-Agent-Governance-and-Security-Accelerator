@@ -1,0 +1,43 @@
+name: data-agent-governance-and-security-accelerator
+metadata:
+  template: governance-wrapper
+infra:
+  provider: bicep
+  path: infra
+  module: main.bicep
+  parameterFile: ./infra/main.bicepparam
+hooks:
+  preprovision:
+    posix:
+      shell: pwsh
+      run: |
+        pwsh ./scripts/Governance/apply-governance-parameters.ps1 -EnvironmentName "$env:AZD_ENV_NAME" -ParametersFile ./infra/main.bicepparam
+    windows:
+      shell: pwsh
+      run: |
+        pwsh ./scripts/Governance/apply-governance-parameters.ps1 -EnvironmentName "$env:AZD_ENV_NAME" -ParametersFile ./infra/main.bicepparam
+  postprovision:
+    posix:
+      shell: pwsh
+      run: |
+        pwsh ./scripts/Governance/PurviewGovernance/enable_purview_dspm.ps1
+        pwsh ./scripts/Governance/PurviewGovernance/create_dspm_policies.ps1
+        pwsh ./scripts/Governance/PurviewGovernance/connect_dspm_to_ai_foundry.ps1
+        pwsh ./scripts/Governance/PurviewGovernance/verify_dspm_configuration.ps1
+        pwsh ./scripts/Governance/DefenderScripts/enable_defender_for_cloud.ps1
+        pwsh ./scripts/Governance/DefenderScripts/enable_defender_for_ai.ps1
+        pwsh ./scripts/Governance/DefenderScripts/enable_user_prompt_evidence.ps1
+        pwsh ./scripts/Governance/DefenderScripts/connect_defender_to_purview.ps1
+        pwsh ./scripts/Governance/DefenderScripts/verify_defender_ai_configuration.ps1
+    windows:
+      shell: pwsh
+      run: |
+        pwsh ./scripts/Governance/PurviewGovernance/enable_purview_dspm.ps1
+        pwsh ./scripts/Governance/PurviewGovernance/create_dspm_policies.ps1
+        pwsh ./scripts/Governance/PurviewGovernance/connect_dspm_to_ai_foundry.ps1
+        pwsh ./scripts/Governance/PurviewGovernance/verify_dspm_configuration.ps1
+        pwsh ./scripts/Governance/DefenderScripts/enable_defender_for_cloud.ps1
+        pwsh ./scripts/Governance/DefenderScripts/enable_defender_for_ai.ps1
+        pwsh ./scripts/Governance/DefenderScripts/enable_user_prompt_evidence.ps1
+        pwsh ./scripts/Governance/DefenderScripts/connect_defender_to_purview.ps1
+        pwsh ./scripts/Governance/DefenderScripts/verify_defender_ai_configuration.ps1

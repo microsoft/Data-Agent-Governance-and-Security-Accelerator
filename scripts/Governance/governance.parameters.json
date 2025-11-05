@@ -1,0 +1,12 @@
+{
+  "purviewAccountName": "<enter-existing-purview-account-name>",
+  "purviewResourceGroup": "<optional-resource-group-for-purview>",
+  "purviewSubscriptionId": "<optional-subscription-id-for-purview>",
+  "purviewResourceId": "<optional-full-resource-id-for-purview>",
+  "aiFoundryProjectName": "<optional-ai-foundry-project-name>",
+  "aiFoundryResourceGroup": "<optional-resource-group-for-ai-foundry>",
+  "aiSubscriptionId": "<optional-subscription-id-for-ai-resources>",
+  "azureOpenAIResourceName": "<optional-azure-openai-resource-name>",
+  "azureOpenAIResourceGroup": "<optional-resource-group-for-azure-openai>",
+  "subscriptionIdOverride": "<optional-subscription-id-if-different-from-default>"
+}
