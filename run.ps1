@@ -1,5 +1,5 @@
 param(
-  [string]   $SpecPath = "./spec.dspm.json",
+  [string]   $SpecPath = "./spec.local.json",
   [string[]] $Tags     = @("dspm"),
   [switch]   $DryRun,
   [switch]   $ContinueOnError
@@ -71,7 +71,16 @@ Write-Host "Running steps for tags: $($Tags -join ', ')" -ForegroundColor Cyan
 # PSScriptAnalyzerSuppressMessage("PSAvoidAssignmentToAutomaticVariable", "", "No automatic variables are assigned; parameters are tracked via local ordered hashtable")
 foreach ($step in $selected) {
   $stepParams = [ordered]@{}
-  if ($step.NeedsSpec) { $stepParams['SpecPath'] = $SpecPath }
+  if ($step.NeedsSpec) {
+    if (-not (Test-Path -Path $SpecPath)) {
+      $templatePath = "./spec.dspm.template.json"
+      if ($SpecPath -eq "./spec.local.json" -and (Test-Path -Path $templatePath)) {
+        throw "Spec file '$SpecPath' not found. Copy '$templatePath' to '$SpecPath' and populate environment values, or pass -SpecPath explicitly."
+      }
+      throw "Spec file '$SpecPath' not found. Provide a valid spec via -SpecPath."
+    }
+    $stepParams['SpecPath'] = $SpecPath
+  }
   if ($step.Parameters) {
     foreach ($entry in $step.Parameters.GetEnumerator()) {
       $stepParams[$entry.Key] = $entry.Value

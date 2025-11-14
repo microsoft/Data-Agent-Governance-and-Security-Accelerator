@@ -1,6 +1,6 @@
 # Filename: 00-New-DspmSpec.ps1
 param(
-  [Parameter()][string]$OutFile = "./spec.dspm.json"
+  [Parameter()][string]$OutFile = "./spec.dspm.template.json"
 )
 
 $tmpl = @'

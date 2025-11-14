@@ -34,24 +34,5 @@ Yes. `scripts/governance/dspmPurview/12-Create-DlpPolicy.ps1` uses Exchange Onli
 	Follow the browser prompt to complete sign-in. If you prefer unattended execution, use a service principal instead (`Connect-AzAccount -ServicePrincipal ...`).
 3. **Run the orchestrator** from the repo root once the session is authenticated:
 	```powershell
-	./run.ps1 -Tags dspm defender -SpecPath ./spec.dspm.json   # from bash/zsh use: pwsh ./run.ps1 -Tags ...
+	./run.ps1 -Tags dspm defender -SpecPath ./spec.local.json   # from bash/zsh use: pwsh ./run.ps1 -Tags ...
 	```
-
-## How do I handle the Exchange Online / Compliance Center tasks from a headless environment?
-- The scripts that require `ExchangeOnlineManagement` (`10-Connect-Compliance.ps1`, `11-Enable-UnifiedAudit.ps1`, `12-Create-DlpPolicy.ps1`, `13-Create-SensitivityLabel.ps1`, `14-Create-RetentionPolicy.ps1`) now live behind the `m365` tag so they **do not** run automatically when you execute `-Tags dspm` inside Codespaces.
-- Run those steps from a workstation that can complete the interactive `Connect-IPPSSession` prompt:
-	```powershell
-	# From a desktop PowerShell 7 session
-	Install-Module ExchangeOnlineManagement -Scope CurrentUser -Force
-	Connect-IPPSSession
-	./run.ps1 -Tags m365 -SpecPath ./spec.dspm.json   # from bash/zsh use: pwsh ./run.ps1 -Tags ...
-	```
-- Once the `m365` run succeeds, you can execute the remaining automation (`-Tags dspm defender foundry`) from the Codespaces container without hitting GUI prompts. If you prefer to run entirely from a local workstation, sign in once and run all tags in a single call:
-	```powershell
-	./run.ps1 -Tags m365,dspm,defender,foundry -SpecPath ./spec.dspm.json
-	# from bash/zsh use: pwsh ./run.ps1 -Tags m365,dspm,defender,foundry -SpecPath ./spec.dspm.json
-	```
-- If you have certificate-based auth configured for Exchange Online, you can still run `-Tags m365` non-interactively by exporting the app settings into the session prior to launching the orchestrator.
-
-## What role does ChatGPT Enterprise play?
-Once the Day 0 automation is complete, any prompts or responses from ChatGPT Enterprise routed through Azure AI Foundry (or connected Microsoft 365 services) pass through Purview DSPM policies and Defender telemetry immediately—capturing audit trails, sensitive info detections, and alert evidence from the start.

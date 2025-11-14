@@ -1,6 +1,6 @@
 # Microsoft Purview DSPM Automation Guide
 
-This guide covers the spec-driven modules under `scripts/governance` that automate Microsoft Purview Data Security Posture Management (DSPM) for AI, Microsoft 365 compliance controls, and Azure AI Foundry governance. Every script is idempotent and reads the shared `spec.dspm.json` contract so you can run them individually, in sequence, or via the tag-aware `run.ps1` orchestrator.
+This guide covers the spec-driven modules under `scripts/governance` that automate Microsoft Purview Data Security Posture Management (DSPM) for AI, Microsoft 365 compliance controls, and Azure AI Foundry governance. Every script is idempotent and reads the shared JSON contract—copy `spec.dspm.template.json` to your working file (for example `spec.local.json`)—so you can run them individually, in sequence, or via the tag-aware `run.ps1` orchestrator.
 
 ---
 
@@ -9,9 +9,9 @@ This guide covers the spec-driven modules under `scripts/governance` that automa
 - **Licensing**: Microsoft 365 E5 (or E5 Compliance) assigned to the operator.
 - **Roles**: Compliance Administrator (or Purview Administrator) plus Purview Data Source Administrator. Azure Contributor rights on the subscription that hosts Purview and AI assets.
 - **Tools**: PowerShell 7, Azure CLI authenticated to the target tenant. Install the Exchange Online Management module on a workstation that can satisfy MFA prompts.
-- **Spec**: Populate `spec.dspm.json` with tenant, subscription, resource group, Purview account, data source names, AI Foundry project, Key Vault, and Log Analytics workspace. Derived IDs are computed automatically by the spec template.
+- **Spec**: Copy `spec.dspm.template.json` to a local file (for example `spec.local.json`) and populate tenant, subscription, resource group, Purview account, data source names, AI Foundry project, Key Vault, and Log Analytics workspace. Derived IDs are computed automatically by the spec template.
 
-> Tip: Regenerate a skeleton spec any time with `pwsh ./scripts/governance/00-New-DspmSpec.ps1 -OutFile ./spec.dspm.json`.
+> Tip: Regenerate a skeleton spec any time with `pwsh ./scripts/governance/00-New-DspmSpec.ps1 -OutFile ./spec.dspm.template.json`, then copy it to your local filename when ready.
 
 ---
 
@@ -92,7 +92,7 @@ Follow the numbered flow to wire up Microsoft 365 governance, Azure resource pos
 Run scripts from the repo root to keep relative paths intact.
 
 ```powershell
-pwsh ./scripts/governance/dspmPurview/03-Register-DataSource.ps1 -SpecPath ./spec.dspm.json
+pwsh ./scripts/governance/dspmPurview/03-Register-DataSource.ps1 -SpecPath ./spec.local.json
 ```
 
 ### Orchestrated execution
@@ -100,7 +100,7 @@ pwsh ./scripts/governance/dspmPurview/03-Register-DataSource.ps1 -SpecPath ./spe
 Use the tag-aware runner to execute multiple modules in order. The example below enables foundational DSPM and audit steps in one go.
 
 ```powershell
-pwsh ./run.ps1 -Tags foundation,dspm,audit -SpecPath ./spec.dspm.json
+pwsh ./run.ps1 -Tags foundation,dspm,audit -SpecPath ./spec.local.json
 ```
 
 ### Day-two validation

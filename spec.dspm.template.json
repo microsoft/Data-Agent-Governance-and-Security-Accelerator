@@ -1,0 +1,132 @@
+{
+  "tenantId": "<tenant-guid>",
+  "subscriptionId": "<subscription-guid>",
+  "resourceGroup": "<resource-group-name>",
+  "location": "<azure-region>",
+  "purviewAccount": "<purview-account-name>",
+  "purviewResourceGroup": "<purview-resource-group>",
+  "purviewSubscriptionId": "<purview-subscription-guid>",
+  "aiResourceGroup": "<ai-resource-group>",
+  "aiSubscriptionId": "<ai-subscription-guid>",
+  "aiFoundry": {
+    "name": "<azure-ai-foundry-name>",
+    "resourceId": "/subscriptions/<ai-subscription-guid>/resourceGroups/<ai-resource-group>/providers/Microsoft.CognitiveServices/accounts/<azure-ai-foundry-name>"
+  },
+  "foundry": {
+    "resources": [
+      {
+        "name": "<resource-name>",
+        "resourceId": "/subscriptions/<ai-subscription-guid>/resourceGroups/<ai-resource-group>/providers/Microsoft.CognitiveServices/accounts/<resource-name>",
+        "diagnostics": true,
+        "tags": {}
+      }
+    ],
+    "contentSafety": {
+      "endpoint": "",
+      "apiKeySecretRef": {
+        "keyVaultResourceId": "",
+        "secretName": ""
+      },
+      "textBlocklists": [],
+      "harmSeverityThreshold": null
+    }
+  },
+  "contentSafety": {
+    "endpoint": "",
+    "keyVault": {
+      "vaultName": "",
+      "resourceId": "",
+      "secretName": ""
+    }
+  },
+  "logAnalyticsWorkspaceId": "",
+  "dataSources": [],
+  "scans": [],
+  "dlpPolicy": {
+    "name": "AI Egress Control",
+    "mode": "Enforce",
+    "locations": {
+      "Exchange": "All",
+      "SharePoint": "All",
+      "OneDrive": "All",
+      "Teams": "All"
+    },
+    "rules": [
+      {
+        "name": "Block Sensitive Data to AI Destinations",
+        "sensitiveInfoTypes": [
+          {
+            "name": "Credit Card Number",
+            "count": 1,
+            "confidence": 85
+          }
+        ],
+        "blockAccess": true,
+        "notifyUser": true
+      }
+    ]
+  },
+  "labels": [
+    {
+      "name": "Confidential",
+      "publishPolicyName": "Publish: Confidential",
+      "encryptionEnabled": true,
+      "publishScopes": {
+        "Exchange": "All",
+        "SharePoint": "All",
+        "OneDrive": "All"
+      }
+    }
+  ],
+  "retentionPolicies": [
+    {
+      "name": "AI Data - 7 Years",
+      "rules": [
+        {
+          "name": "Keep 7y then Delete",
+          "durationDays": 2557,
+          "action": "Delete"
+        }
+      ],
+      "locations": {
+        "Exchange": "All",
+        "SharePoint": "All",
+        "OneDrive": "All",
+        "TeamsChat": "All",
+        "TeamsChannel": "All"
+      }
+    }
+  ],
+  "activityExport": {
+    "outputPath": "./audit_export",
+    "contentTypes": [
+      "Audit.General",
+      "Audit.SharePoint",
+      "Audit.Exchange",
+      "DLP.All",
+      "Audit.AzureActiveDirectory",
+      "Audit.PowerBI"
+    ]
+  },
+  "azurePolicies": [
+    {
+      "name": "deny-public-access-cognitiveservices",
+      "displayName": "Cognitive Services accounts should disable public network access",
+      "scope": "resourceGroup",
+      "parameters": {}
+    }
+  ],
+  "defenderForAI": {
+    "enableDefenderForCloudPlans": [
+      "CognitiveServices",
+      "Storage",
+      "Containers"
+    ],
+    "logAnalyticsWorkspaceId": "",
+    "diagnosticCategories": [
+      "Audit",
+      "RequestResponse",
+      "AllMetrics"
+    ]
+  }
+}

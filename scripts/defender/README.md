@@ -1,6 +1,6 @@
 # Defender for AI Automation Guide
 
-The scripts under `scripts/defender/defenderForAI` enable Microsoft Defender for Cloud plans that protect Azure AI services, wire diagnostics to Log Analytics, and prepare the environment for integration with Purview DSPM. They rely on the same `spec.dspm.json` contract as the DSPM modules, so the subscription, resource group, Log Analytics workspace, and resource names are defined in one place.
+The scripts under `scripts/defender/defenderForAI` enable Microsoft Defender for Cloud plans that protect Azure AI services, wire diagnostics to Log Analytics, and prepare the environment for integration with Purview DSPM. They rely on the shared spec contract (copy `spec.dspm.template.json` to your local file such as `spec.local.json`), so the subscription, resource group, Log Analytics workspace, and resource names are defined in one place.
 
 ---
 
@@ -29,11 +29,11 @@ Both scripts support `-SpecPath` and optional `-Tags` parameters so they can run
 1. Run the DSPM prerequisites (Purview account, unified audit) as described in `scripts/governance/README.md`.
 2. Enable Defender plans:
    ```powershell
-   pwsh ./scripts/defender/defenderForAI/06-Enable-DefenderPlans.ps1 -SpecPath ./spec.dspm.json
+   pwsh ./scripts/defender/defenderForAI/06-Enable-DefenderPlans.ps1 -SpecPath ./spec.local.json
    ```
 3. Configure diagnostics for protected resources:
    ```powershell
-   pwsh ./scripts/defender/defenderForAI/07-Enable-Diagnostics.ps1 -SpecPath ./spec.dspm.json
+   pwsh ./scripts/defender/defenderForAI/07-Enable-Diagnostics.ps1 -SpecPath ./spec.local.json
    ```
 4. Review Microsoft Defender for Cloud -> Environment settings -> AI services to confirm plans show as **On** and diagnostics point to the correct workspace.
 

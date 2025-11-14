@@ -8,12 +8,4 @@ infra:
   parameterFile: main.bicepparam
 hooks:
   preprovision:
-    posix:
-      shell: pwsh
-      run: |
-        pwsh ./scripts/Governance/apply-governance-parameters.ps1 -EnvironmentName "$env:AZD_ENV_NAME" -ParametersFile ./infra/main.bicepparam
-    windows:
-      shell: pwsh
-      run: |
-        pwsh ./scripts/Governance/apply-governance-parameters.ps1 -EnvironmentName "$env:AZD_ENV_NAME" -ParametersFile ./infra/main.bicepparam
-
+   
