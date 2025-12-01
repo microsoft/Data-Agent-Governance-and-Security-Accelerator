@@ -204,7 +204,7 @@ Use this checklist with your change plan/runbook so stakeholders understand whic
 | `scans`, `audit`, `policies`, `diagnostics`, `ops`, `tags`, `contentsafety` | Finer-grained switches used internally by the plan. You usually won’t call them directly unless you want to rerun a single atomic step (e.g., `-Tags audit` to replay the audit export scripts).                                                                                                         | `./run.ps1 -Tags audit -SpecPath ./spec.local.json` |
 | `all`                                                                       | Convenience alias that expands to every tag listed above (runs everything end-to-end).                                                                                                                                                                                                                        | `./run.ps1 -Tags all -SpecPath ./spec.local.json` |
 
-Use whichever combination suits your workflow (for example, `-Tags m365` from a workstation, then `-Tags dpsm,defender,foundry` from Cloud Shell). Documenting the tags keeps the intent clear until we refactor or rename them.
+Use whichever combination suits your workflow (for example, `-Tags m365` from a workstation, then `-Tags dspm,defender,foundry` from Cloud Shell). Documenting the tags keeps the intent clear until we refactor or rename them.
 
 ## Run plan breakdown
 
