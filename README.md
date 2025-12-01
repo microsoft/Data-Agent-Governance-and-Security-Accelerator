@@ -1,7 +1,22 @@
 # AI Governance and Security Accelerator
 
-This accelerator knits together Microsoft 365, Microsoft Purview, Microsoft Defender for Cloud, Azure AI Foundry, and ChatGPT Enterprise so AI solutions inherit the same governance and security posture as the rest of the enterprise. All automation is spec driven: copy the shared template (`spec.dspm.template.json`) to an environment-specific file (for example `spec.local.json`) that feeds the PowerShell modules configuring resources, enabling compliance controls, and collecting monitoring across tenants. This solution will create automation of applying policies needed for foundry control plane, the creation of RBAC rules for agents in Agent 365 and many other manual setups necessary to govern your AI data and agents. 
+This accelerator automates the deployment and configuration of **Microsoft Purview Data Security Posture Management (DSPM) for AI**, eliminating manual setup steps and providing a documented, repeatable process to govern AI workloads across your tenant. By running spec-driven PowerShell modules, you can rapidly enable DSPM for AI features that discover, classify, and protect data used by **Azure AI Foundry**, **ChatGPT Enterprise**, **Microsoft 365 Copilot**, and **Microsoft Fabric**—ensuring every AI interaction inherits enterprise-grade security and compliance controls.
 
+The solution delivers:
+
+- **Automated DSPM for AI enablement** – turn on Purview's AI-specific recommendations, sensitivity labeling, DLP policies, and audit capture without manual portal clicks.
+- **Microsoft Foundry control plane governance** – apply Azure Policies, Content Safety guardrails, resource tagging, and Defender for AI telemetry to every Foundry project and connection.
+- **Microsoft Fabric discovery and protection** – register OneLake roots, Lakehouse tables, and Fabric workspaces in Purview DSPM so AI models trained on Fabric data remain continuously monitored and classified.
+- **End-to-end auditability** – export interaction logs, compliance inventory, and posture evidence to storage or Fabric for downstream analytics and regulatory reporting.
+
+All automation is spec-driven: copy the shared template (`spec.dspm.template.json`) to an environment-specific file (for example `spec.local.json`) that feeds the PowerShell modules configuring resources, enabling compliance controls, and collecting telemetry across tenants. This approach replaces error-prone manual workflows with versioned policy/configuration-as-code, accelerating time-to-compliance and ensuring consistent DSPM coverage as new AI services and Fabric environments are onboarded.
+
+
+---
+
+## Prerequisites
+
+Before DSPM can provide insights and risk analytics, you must opt in to analytics processing for Insider Risk Management (IRM) and Data Loss Prevention (DLP). This is a prerequisite for DSPM to start scanning and correlating data security signals. Once enabled, DSPM automatically begins scanning your data estate for sensitive data and risky activities.
 - **PowerShell 7 required** – run every script (including `run.ps1`) from pwsh 7.x to avoid Windows PowerShell module loader conflicts.
 - **Az module installed** – install or update the Az rollup before running anything:
 
@@ -11,18 +26,6 @@ This accelerator knits together Microsoft 365, Microsoft Purview, Microsoft Defe
   Install-Module Az.Security -Scope CurrentUser -Force    # defender steps
   ```
 
-- **Purview DSPM for AI** discovers, classifies, and protects data used by AI workloads in Microsoft Foundry, Microsoft 365, Fabric, OneLake, and connected Azure services.
-- **Defender for AI** enables threat detection (prompt injection, jailbreak, exfiltration) and routes evidence into SIEM or Purview.
-- **Azure AI Foundry + ChatGPT Enterprise** gain Content Safety policies, audit trails, and resource tagging so every prompt, response, and deployment can be governed.
-
----
-
-## Prerequisites
-
-Before DSPM can provide insights and risk analytics, you must opt in to analytics processing for Insider Risk Management (IRM) and Data Loss Prevention (DLP). This is a prerequisite for DSPM to start scanning and correlating data security signals. Once enabled, DSPM automatically begins scanning your data estate for sensitive data and risky activities.
-
-
-- **PowerShell 7** and **Azure CLI **authenticated to the target subscriptions.
 - **Microsoft 365 E5** (or **E5 compliance**) license assigned to an operator with **Compliance Administrator** and **Purview Data Source Administrator rights** ([Microsoft Learn](https://learn.microsoft.com/en-us/purview/ai-microsoft-purview-considerations#prerequisites-for-data-security-posture-management-for-ai)).
 - **Exchange Online Management module** installed on a workstation capable of satisfying MFA for audit enablement steps ([Connect to Exchange Online PowerShell](https://learn.microsoft.com/en-us/powershell/exchange/connect-to-exchange-online-powershell)).
 - The **operator** running the Microsoft 365 tag (`run.ps1 -Tags m365`) must hold **Unified Audit** roles (Compliance Administrator, Organization Management, or Audit Admin). Without those permissions Exchange will report "completed successfully but no settings modified" when toggling `Set-AdminAuditLogConfig`, so the scripts emit a warning and you must enable unified audit in the Purview/M365 Compliance portal instead.
@@ -36,54 +39,73 @@ Before DSPM can provide insights and risk analytics, you must opt in to analytic
 ---
 
 ## Quick start
+## What do I need to do before running `run.ps1` in a fresh shell or container?
+## Quick start
 
-1. **Clone and install tooling** (PowerShell 7, Azure CLI) in your preferred shell.
-2. **Review the spec template** – the repo includes `spec.dspm.template.json` (generated by `scripts/governance/00-New-DspmSpec.ps1`). Update it if the schema changes (the script skips overwriting existing files unless you pass `-Force`):
-
-```powershell
-pwsh ./scripts/governance/00-New-DspmSpec.ps1 -OutFile ./spec.dspm.template.json
-```
-
-3. **Fill in parameters** – copy `spec.dspm.template.json` to `spec.local.json`, populate tenant and resource IDs, and keep the local file untracked (see below).
-4. **Execute the modules** – stay in the repo root and follow the same order every time (see the [Tag reference](#tag-reference) for more detail on each tag and additional combinations):
+1. **Install the tooling** – open PowerShell 7 and install/refresh the Az bits you need:
+   ```powershell
+   Install-Module Az -Scope CurrentUser -Repository PSGallery -Force -AllowClobber
+   Install-Module Az.Security -Scope CurrentUser -Force
+   ```
+2. **Sign in to Azure** – authenticate in the same shell that will run the scripts:
+   ```powershell
+   Connect-AzAccount -Tenant '<tenant-guid>' -Subscription '<subscription-guid>'
+   ```
+   For automation, use a service principal or managed identity instead (device-code auth is disabled here):
+   ```powershell
+   Connect-AzAccount -ServicePrincipal -Tenant '<tenant-guid>' -ApplicationId '<appId>' -Credential (Get-Credential)
+   ```
+3. **Prepare the spec** – this is an optional step and should only be run in a new clone before running scripts. As the solution grows additional parameters may be added, or refactored. Regenerate the public template when the schema changes, then clone it to your local copy:
+   ```powershell
+   pwsh ./scripts/governance/00-New-DspmSpec.ps1 -OutFile ./spec.dspm.template.json
+   Copy-Item ./spec.dspm.template.json ./spec.local.json
+   ```
+   Populate tenant/subscription IDs, Purview settings, Foundry resources, Content Safety endpoints, etc., and keep the local file untracked.
+4. **Execute the modules** – from the repo root, run the individual scripts you need (or orchestrate them via tags as in the examples). A typical first run looks like:
    - **Foundation (Purview landing zone):**
      ```powershell
      pwsh ./scripts/governance/01-Ensure-ResourceGroup.ps1 -SpecPath ./spec.local.json
      pwsh ./scripts/governance/dspmPurview/02-Ensure-PurviewAccount.ps1 -SpecPath ./spec.local.json
      ```
-   - **Microsoft 365 compliance slice (requires local desktop + MFA):**
+   - **Microsoft 365 compliance  (desktop + MFA):**
      ```powershell
      ./run.ps1 -Tags m365 -SpecPath ./spec.local.json
-     # from bash/zsh use: pwsh ./run.ps1 -Tags m365 -SpecPath ./spec.local.json
+     # bash/zsh: pwsh ./run.ps1 -Tags m365 -SpecPath ./spec.local.json
      ```
-     This single tag call connects to Exchange Online, turns on Unified Audit if needed, and publishes your Know Your Data/DLP/label/retention settings.
+     Connects to Exchange Online, ensures Unified Audit, and publishes KYD/DLP/label/retention settings.
    - **Purview registrations and scans:**
      ```powershell
      pwsh ./scripts/governance/dspmPurview/03-Register-DataSource.ps1 -SpecPath ./spec.local.json
      pwsh ./scripts/governance/dspmPurview/04-Run-Scan.ps1 -SpecPath ./spec.local.json
      ```
-   - **Defender for AI posture:**
+   - **Defender for AI posture:** - additional manual step necessary
      ```powershell
      pwsh ./scripts/defender/defenderForAI/06-Enable-DefenderPlans.ps1 -SpecPath ./spec.local.json
      pwsh ./scripts/defender/defenderForAI/07-Enable-Diagnostics.ps1 -SpecPath ./spec.local.json
      ```
-   - **Foundry registration + Content Safety:**
+   - **Foundry registration + Content Safety:** - need content safety endpoint in the parameter file
      ```powershell
      pwsh ./scripts/governance/dspmPurview/30-Foundry-RegisterResources.ps1 -SpecPath ./spec.local.json
      pwsh ./scripts/governance/dspmPurview/31-Foundry-ConfigureContentSafety.ps1 -SpecPath ./spec.local.json
      ```
-   - **Optional orchestrator:** skip the individual calls above and drive the same steps via tags:
+   - **Optional orchestrator:** bundle the same steps with tags instead of individual scripts:
      ```powershell
      ./run.ps1 -Tags m365 -SpecPath ./spec.local.json
      ./run.ps1 -Tags dspm,defender,foundry -SpecPath ./spec.local.json
+     ./run.ps1 -Tags all -SpecPath ./spec.local.json
      ```
-     Tags can be combined however you like (for example `-Tags foundation,dspm` for just the Purview pieces).
+     Mix tags however you like (for example `-Tags foundation,dspm`).
+5. **Review dashboards & export evidence** – once telemetry and policies show up, capture artifacts:
+   ```powershell
+   pwsh ./scripts/governance/dspmPurview/17-Export-ComplianceInventory.ps1 -SpecPath ./spec.local.json
+   pwsh ./scripts/governance/dspmPurview/21-Export-Audit.ps1 -SpecPath ./spec.local.json
+   ```
 
 ### Defender for Cloud plan choices
 
 Populate `defenderForAI.enableDefenderForCloudPlans` (in `spec.dspm.template.json` or your local copy) with every Defender for Cloud plan you want the automation to enable before Defender for AI correlates findings. Common values include:
 
-- `CognitiveServices` (shows as **AI Services** in the Defender for Cloud blade) – guardrails for Azure AI Foundry, Azure OpenAI, and other Cognitive Services accounts that host prompts, responses, or model orchestration.
+- `CognitiveServices` (displayed as **AI Services** in the Defender for Cloud portal) – protection for Azure AI Foundry, Azure OpenAI, and other Cognitive Services resources that handle prompts, responses, or model orchestration. **Note:** enabling the "Enable data security for AI interactions" feature for AI Services in Defender still requires a manual step in the Purview portal (see the manual checkpoints section below). 
 - `Storage` – coverage for Storage accounts holding prompt transcripts, audit exports, embeddings, or fine-tuning payloads.
 - `Containers` – Defender for Containers for AKS/Fabric scenarios where containerized agents run inference pipelines.
 - `KeyVaults` – detection around vaults storing model keys, Content Safety secrets, or managed identities.
@@ -138,38 +160,25 @@ Add or remove plan strings as needed; the `06-Enable-DefenderPlans.ps1` module i
 
 ## Automation flow & manual checkpoints
 
-Legend: ✅ = scripted/automated, 🔶 = operator completes manually in portal or desktop PowerShell session.
 
-```
-[Spec ready in PowerShell 7] (✅)
-  |
-  v
-[./run.ps1 -Tags foundation,dspm] (✅) → Purview account, scans, policies, diagnostics
-  |
-  v
-[Manual Purview toggle: Secure interactions for enterprise AI apps] (🔶)
-  |
-  v
-[./run.ps1 -Tags m365] from local pwsh (✅) → Unified Audit, KYD policy, DLP/labels/retention
-  |
-  v
-[Portal-only policies: Communication Compliance + Insider Risk previews] (🔶)
-  |
-  v
-[./run.ps1 -Tags defender,foundry] (✅) → Defender plans, diagnostics, Content Safety, Foundry registration
-  |
-  v
-[Manual review: verify dashboards, upload evidence, approve previews if required] (🔶)
-```
+### DSPM for Microsoft Foundry Steps
+
+The following diagram illustrates the end-to-end automation flow for securing Azure AI Foundry with Purview DSPM and Defender for AI:
+
+![DSPM for Foundry Steps](./docs/doc-images/DSPM-for-Foundry-Steps.png)
+
 
 Manual steps exist where Microsoft has not yet exposed APIs or where MFA-capable desktop sessions are mandatory (Exchange Online, Purview preview toggles). Keep this diagram handy when planning customer demos so you can assign owners before the run.
 
+### DSPM for M365 Copilot, Microsoft Foundry, custom AI solutions and ChatGPT Enterprise
+
+![DSPM for all services](./docs/doc-images/DSPM-for-all-services-steps.png)
+
 ### Required manual checkpoints
 
-1. **Secure interactions / KYD toggle (Purview portal)**
+1. **Secure interactions / KYD policy (Purview portal)**
   - Navigate to **https://web.purview.azure.com** → **Data Security Posture** → **Recommendations** → **Secure interactions for enterprise AI apps**.
-  - Select every Azure AI Foundry account/project that will emit chats and choose **Enable**. This is the only way to flip the “Capture interactions for enterprise AI apps” switch today.
-  - Revisit after each new Foundry project is registered; the automation cannot satisfy this control via API yet.
+
 2. **Exchange Online desktop session for `m365` tag**
   - Open PowerShell 7 on a workstation with browser-based MFA, install/update the Exchange Online Management module, and run `./run.ps1 -Tags m365 -ConnectM365 -M365UserPrincipalName <upn>`.
   - Approve the MFA prompts, confirm Unified Audit reports “Enabled,” and verify the Secure interactions (KYD) policy appears under **Data lifecycle management** in the Purview portal.
@@ -192,10 +201,87 @@ Use this checklist with your change plan/runbook so stakeholders understand whic
 | `dspm`                                                                      | Broader Purview governance tasks beyond the bootstrap: scan registration, audit subscriptions/exports (`20-21`), Azure policy assignments, tagging, posture validation. Combine with `foundation` for the full Purview story.                                                                                 | `./run.ps1 -Tags foundation,dspm -SpecPath ./spec.local.json` |
 | `defender`                                                                  | Defender for AI enablement scripts (`06-Enable-DefenderPlans.ps1`, `07-Enable-Diagnostics.ps1`) plus content-safety wiring. Requires the AI subscription/resource group fields in the spec.                                                                                                                   | `./run.ps1 -Tags defender -SpecPath ./spec.local.json` |
 | `foundry`                                                                   | Azure AI Foundry integration: resource registration, tagging, diagnostics, content safety, OneLake/Fabric registration (when enabled). Works off `aiFoundry` and `foundry.resources` blocks in the spec.                                                                                                      | `./run.ps1 -Tags foundry -SpecPath ./spec.local.json` |
-| `scans`, `audit`, `policies`, `diagnostics`, `ops`, `tags`, `contentsafety` | Finer-grained switches used internally by the plan. You usually won’t call them directly unless you want to rerun a single slice (e.g., `-Tags audit` to replay the audit export scripts).                                                                                                                    | `./run.ps1 -Tags audit -SpecPath ./spec.local.json` |
+| `scans`, `audit`, `policies`, `diagnostics`, `ops`, `tags`, `contentsafety` | Finer-grained switches used internally by the plan. You usually won’t call them directly unless you want to rerun a single atomic step (e.g., `-Tags audit` to replay the audit export scripts).                                                                                                         | `./run.ps1 -Tags audit -SpecPath ./spec.local.json` |
 | `all`                                                                       | Convenience alias that expands to every tag listed above (runs everything end-to-end).                                                                                                                                                                                                                        | `./run.ps1 -Tags all -SpecPath ./spec.local.json` |
 
 Use whichever combination suits your workflow (for example, `-Tags m365` from a workstation, then `-Tags dpsm,defender,foundry` from Cloud Shell). Documenting the tags keeps the intent clear until we refactor or rename them.
+
+## Run plan breakdown
+
+`run.ps1` drives a fixed plan (see `$plan` in the script) so every atomic step of DSPM for AI and the Foundry control plane happens in a deterministic order. The table below expands each step, explaining both *what* the script does and *why* it matters.
+
+| Order | Script | What happens | Why it matters for DSPM / Foundry |
+| ----- | ------ | ------------- | --------------------------------- |
+| 5 | `00-New-DspmSpec.ps1` | Generates or refreshes the spec contract (`spec.dspm.template.json`) and, by default, writes it to `-SpecPath`. | Keeps every run tied to a declared configuration so compliance/policy intent stays versioned and auditable. |
+| 10 | `01-Ensure-ResourceGroup.ps1` | Confirms or creates the landing-zone resource group for Purview, Defender, diagnostics, and Foundry resources. | Guarantees there is a governed container before policies, RBAC, and diagnostics are layered on top. |
+| 20 | `02-Ensure-PurviewAccount.ps1` | Ensures the Purview account exists and is configured per spec. | DSPM analytics, scans, and Secure interactions all depend on a healthy Purview account. |
+| 30 | `10-Connect-Compliance.ps1` | Establishes the Exchange Online/Security & Compliance sessions. | Required to publish KYD, DLP, and retention artifacts that capture Foundry prompts/responses. |
+| 40 | `11-Enable-UnifiedAudit.ps1` | Turns on Unified Audit (or verifies it). | Without Unified Audit the KYD policy cannot store interactions, so Purview/Defender lose lineage for Foundry chats. |
+| 50 | `12-Create-DlpPolicy.ps1` | Creates or updates DLP/KYD policies from the spec. | Enforces the “Secure interactions for enterprise AI apps” control and routes Foundry prompts into governed mailboxes. |
+| 60 | `13-Create-SensitivityLabel.ps1` | Publishes sensitivity labels referenced elsewhere in the spec. | Ensures scans and Foundry outputs inherit the right classification vocabulary. |
+| 70 | `14-Create-RetentionPolicy.ps1` | Creates retention policies/rules for AI interaction data. | Keeps Foundry transcripts, audit exports, and downstream evidence governed for the required duration. |
+| 80 | `03-Register-DataSource.ps1` | Registers data sources (storage, SQL, OneLake, Fabric) in Purview. | Gives DSPM observability across the data estate, including stores that power Foundry projects. |
+| 90 | `04-Run-Scan.ps1` | Triggers Purview scans based on the registered sources. | Produces the sensitive-data findings that DSPM uses to prioritize recommendations tied to Foundry workloads. |
+| 100 | `20-Subscribe-ManagementActivity.ps1` | Sets up Management Activity / audit exports. | Ships Purview audit telemetry so prompts, scans, and alerts can be reconstructed outside the tenant. |
+| 110 | `21-Export-Audit.ps1` | Executes the actual audit export to storage/Fabric. | Creates external evidence proving Foundry prompts and policy actions were recorded. |
+| 120 | `05-Assign-AzurePolicies.ps1` | Applies Azure Policy assignments from the spec. | Enforces guardrails (diagnostics, tags, encryption) on Purview and Foundry resources at scale. |
+| 130 | `06-Enable-DefenderPlans.ps1` | Enables Defender for Cloud plans tied to AI/Fabric resources. | Lights up Defender for AI detections so Foundry projects inherit threat protection. |
+| 140 | `07-Enable-Diagnostics.ps1` | Configures diagnostic settings/log pipelines. | Streams AI endpoint and Purview telemetry to Log Analytics/LA workspaces for SOC monitoring. |
+| 150 | `25-Tag-ResourcesFromSpec.ps1` | Applies governance tags described in the spec. | Builds lineage between Azure resources and Purview/Foundry controls, making DSPM reports actionable. |
+| 200 | `30-Foundry-RegisterResources.ps1` | Registers Foundry workspaces/projects in Purview DSPM. | Allows Purview DSPM to correlate “Secure interactions” recommendations with actual Foundry projects. |
+| 210 | `31-Foundry-ConfigureContentSafety.ps1` | Deploys Content Safety blocklists/settings to Foundry projects. | Enforces the same prompt filtering across Foundry control plane artifacts that DLP provides in M365. |
+| 220 | `17-Export-ComplianceInventory.ps1` | Captures compliance inventory outputs. | Produces a bundle of “day zero” evidence for auditors (labels, policies, scans) tied to Foundry. |
+| 280 | `24-Create-BudgetAlert-Stub.ps1` | Placeholder for budget alerts. | Allows you to wire cost controls into the same run once your organization finalizes thresholds. |
+
+> Fabric/OneLake scripts (`26-29`) remain commented out in the plan. Once those resources are onboarded, re-enable them so Fabric data surfaces alongside Foundry telemetry in DSPM.
+
+### Journey map
+
+The following text diagram mirrors the ordered plan and shows how each step feeds the next. Use it as a slide-ready journey map when explaining the run book.
+
+```
+[05 New-DspmSpec]
+  ↓ (codify intent)
+[10 Ensure-ResourceGroup] → ensures governed landing zone
+  ↓
+[20 Ensure-PurviewAccount] → DSPM control plane ready
+  ↓
+[30 Connect-Compliance] → establish EXO/Compliance sessions
+  ↓
+[40 Enable-UnifiedAudit] → capture Foundry/KYD telemetry
+  ↓
+[50 Create-DlpPolicy]
+  ↓
+[60 Create-SensitivityLabel]
+  ↓
+[70 Create-RetentionPolicy] → compliance stack published
+  ↓
+[80 Register-DataSource] → Purview aware of estate feeding Foundry
+  ↓
+[90 Run-Scan] → classify sensitive data
+  ↓
+[100 Subscribe-ManagementActivity]
+  ↓
+[110 Export-Audit] → external evidence trail
+  ↓
+[120 Assign-AzurePolicies] → guardrails on infra
+  ↓
+[130 Enable-DefenderPlans]
+  ↓
+[140 Enable-Diagnostics]
+  ↓
+[150 Tag-ResourcesFromSpec]
+  ↓
+[200 Foundry-RegisterResources]
+  ↓
+[210 Foundry-ConfigureContentSafety] → Foundry control plane hardened
+  ↓
+[220 Export-ComplianceInventory] → capture DSPM/Foundry posture
+  ↓
+[280 Create-BudgetAlert-Stub] → optional cost governance hook
+```
+
+Present this flow alongside the tag reference so stakeholders can see why every script matters before they flip over to `run.ps1`.
 
 ## Spec management
 
@@ -221,27 +307,7 @@ Use whichever combination suits your workflow (for example, `-Tags m365` from a 
 
 ## Architecture overview
 
-```
-M365 Compliance Boundary
-  ├─ Microsoft Purview DSPM for AI
-  │    ├─ Know Your Data policies (DLP, sensitivity, retention)
-  │    ├─ Audit ingestion + Management Activity exports
-  │    └─ Compliance role assignments
-  └─ ChatGPT Enterprise + Teams, Exchange, SharePoint workloads
-          │ governed via Purview policies and audit
-          ▼
-Azure Landing Zone
-  ├─ Purview account + Log Analytics workspace
-  ├─ Azure AI Foundry projects (tagged, content safety enabled)
-  ├─ Azure OpenAI, Cognitive Services, Fabric, OneLake
-  └─ Defender for Cloud plans + diagnostics
-          │ telemetry and governance metadata flow
-          ▼
-Operations & Monitoring
-  ├─ Spec-driven automation (PowerShell modules)
-  ├─ Audit exports to Storage or Fabric Lakehouse
-  └─ Posture validation scripts for day-two operations
-```
+
 
 ---
 
