@@ -59,7 +59,7 @@ pwsh ./verify_defender_ai_configuration.ps1
 - **Audit Logging**: Complete audit trail for all AI interactions
 - **Retention Policies**: Configurable data retention for compliance
 
-## 📊 Monitoring & Alerts
+## Monitoring & Alerts
 
 After configuration, monitor your AI security:
 
@@ -76,7 +76,7 @@ After configuration, monitor your AI security:
 - User prompt evidence collected
 - Purview integration status
 
-## 🏗️ Architecture Integration
+## Architecture Integration
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
@@ -110,7 +110,7 @@ After configuration, monitor your AI security:
 └──────────────────────────────────────────────────────────────┘
 ```
 
-## 🔧 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
@@ -135,7 +135,7 @@ After configuration, monitor your AI security:
 - Verify Purview account is in same tenant
 - Check network connectivity between services
 
-## 💰 Cost Considerations
+## Cost Considerations
 
 ### Defender for Cloud Pricing
 - **Free tier**: Basic security hygiene and recommendations
@@ -143,10 +143,10 @@ After configuration, monitor your AI security:
 - **Defender for AI Services**: Based on API transactions volume
 
 ### What's Included
-- ✅ Threat detection for AI workloads
-- ✅ Security alerts and recommendations
-- ✅ User prompt evidence collection (limited retention)
-- ✅ Integration with Microsoft Sentinel
+- Threat detection for AI workloads
+- Security alerts and recommendations
+- User prompt evidence collection (limited retention)
+- Integration with Microsoft Sentinel
 
 ### Additional Costs
 - **Extended data retention**: Beyond default retention period
@@ -155,7 +155,7 @@ After configuration, monitor your AI security:
 
 **Cost estimation**: [Defender for Cloud Pricing](https://azure.microsoft.com/pricing/details/defender-for-cloud/)
 
-## 📖 References
+## References
 
 ### Microsoft Documentation
 - [Enable threat protection for AI services](https://learn.microsoft.com/azure/defender-for-cloud/ai-onboarding)
@@ -169,7 +169,7 @@ After configuration, monitor your AI security:
 - [Purview DSPM for AI](https://learn.microsoft.com/purview/ai-microsoft-purview)
 - [Security for AI guide](https://learn.microsoft.com/security/security-for-ai/)
 
-## 🤝 Integration with Existing Scripts
+## Integration with Existing Scripts
 
 These Defender scripts complement the existing automation:
 
@@ -180,7 +180,7 @@ These Defender scripts complement the existing automation:
 
 Together, they provide **comprehensive AI security** from infrastructure to threat detection with integrated governance and compliance.
 
-## 🎯 Orchestration via azure.yaml
+## Orchestration via azure.yaml
 
 These scripts are designed to be orchestrated via the `azure.yaml` file in the post-provisioning hooks:
 

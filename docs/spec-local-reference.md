@@ -8,7 +8,7 @@ This guide documents every field that appears in the working `spec.local.json` *
 
 **New to the spec file?** Start with the annotated example:
 
-📄 **[spec-example.json](./spec-example.json)** — A complete example with realistic (fictional) values and inline comments explaining each section.
+**[spec-example.json](./spec-example.json)** — A complete example with realistic (fictional) values and inline comments explaining each section.
 
 **To create your spec file:**
 ```powershell

@@ -14,16 +14,16 @@ Light up Microsoft Purview Data Security Posture Management (DSPM) for AI to saf
 
 ## Getting Started - Choose Your Path
 
-**🆕 New to this accelerator?**  
+**New to this accelerator?**  
 → Start with the [Deployment Guide](./docs/DeploymentGuide.md) for comprehensive step-by-step instructions
 
-**🔄 Already familiar with the solution?**  
+**Already familiar with the solution?**  
 → Use [Quick Deploy](#quick-deploy) below for reference commands
 
-**🎯 Want to secure Azure AI Foundry only?**  
+**Want to secure Azure AI Foundry only?**  
 → Jump to [Foundry-Only Configuration](#foundry-only-configuration) for minimal setup
 
-**📊 Need to understand which tags to run?**  
+**Need to understand which tags to run?**  
 → See [Common Deployment Scenarios](#common-deployment-scenarios) for scenario-based guidance
 
 ### First Time Setup Checklist
@@ -74,16 +74,16 @@ This accelerator automates the configuration of both services so you don't have 
 
 ### How to customize
 - [Author and extend the spec contract](./spec.dspm.template.json) for each tenant/subscription.
-- [Tailor the sales narrative and stakeholder flow](./docs/dspm-sales-narrative.md) to align with your adoption story.
-- [Adjust PAYG guidance](./docs/payGo.md) with your finance team.
+- [Review the value proposition](./docs/WhyDSPM.md) to communicate benefits to stakeholders.
+- [Understand cost implications](./docs/CostGuidance.md) before enabling paid features.
 - Extend stub scripts (for example `15-Create-SensitiveInfoType-Stub.ps1`) with organization-specific controls.
 
 ### Additional resources
 - [Architecture Overview](./docs/ArchitectureOverview.md) - Technical architecture and class diagram
 - [Deployment Guide](./docs/DeploymentGuide.md)
 - [Troubleshooting Guide](./docs/TroubleshootingGuide.md)
-- [Spec-driven governance narrative](./docs/dspm-sales-narrative.md)
-- [Cost and PAYG overview](./docs/payGo.md)
+- [Why DSPM for AI?](./docs/WhyDSPM.md) - Value proposition and stakeholder guide
+- [Cost Guidance](./docs/CostGuidance.md) - Billing models and cost optimization
 
 ---
 
@@ -156,7 +156,7 @@ pwsh ./run.ps1 -Tags foundation,dspm,defender,foundry -SpecPath ./spec.local.jso
 | [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/microsoft/Data-Agent-Governance-and-Security-Accelerator) | [![Open in Dev Containers](https://img.shields.io/static/v1?style=for-the-badge&label=Dev%20Containers&message=Open&color=blue&logo=visualstudiocode)](https://vscode.dev/redirect?url=vscode://ms-vscode-remote.remote-containers/cloneInVolume?url=https://github.com/microsoft/Data-Agent-Governance-and-Security-Accelerator) | [![Open in Visual Studio Code Web](https://img.shields.io/static/v1?style=for-the-badge&label=Visual%20Studio%20Code%20(Web)&message=Open&color=blue&logo=visualstudiocode&logoColor=white)](https://insiders.vscode.dev/azure/?vscode-azure-exp=foundry&agentPayload=eyJiYXNlVXJsIjogImh0dHBzOi8vZ2l0aHViLmNvbS9taWNyb3NvZnQvRGF0YS1BZ2VudC1Hb3Zlcm5hbmNlLWFuZC1TZWN1cml0eS1BY2NlbGVyYXRvciIsICJpbmRleFVybCI6ICIvcmVmczo6aGVhZHMvbWFpbi9pbmZyYS92c2NvZGVfd2ViIiwgY2xhaW1zIjogeyJ3b3JrZmxvdyI6ICJjbG9uZSJ9fQ==) |
 | --- | --- | --- |
 
-### ⚠️ CRITICAL POST-DEPLOYMENT STEPS
+### CRITICAL POST-DEPLOYMENT STEPS
 
 After automation completes, you **MUST** manually enable two settings that cannot be automated via API:
 
@@ -175,7 +175,7 @@ After automation completes, you **MUST** manually enable two settings that canno
 
 See [Required Manual Checkpoints](#required-manual-checkpoints) for complete post-deployment checklist.
 
-> 🛠️ **Need help?** Review the [Troubleshooting Guide](./docs/TroubleshootingGuide.md) for solutions to common azd and Purview authentication issues.
+> **Need help?** Review the [Troubleshooting Guide](./docs/TroubleshootingGuide.md) for solutions to common azd and Purview authentication issues.
 
 ---
 
@@ -237,16 +237,16 @@ Set-AzContext -Subscription <subscriptionId>
 ```
 
 ### What this enables
-✅ Defender for AI plans on Cognitive Services resources  
-✅ Diagnostic settings streaming to Log Analytics  
-✅ Content Safety blocklists (if `foundry.contentSafety` configured in spec)  
-✅ Resource tagging for governance lineage  
+- Defender for AI plans on Cognitive Services resources  
+- Diagnostic settings streaming to Log Analytics  
+- Content Safety blocklists (if `foundry.contentSafety` configured in spec)  
+- Resource tagging for governance lineage  
 
 ### What you DON'T get without other tags
-❌ No Purview DSPM scanning of data sources  
-❌ No M365 KYD/DLP policies for Copilot  
-❌ No audit exports to external storage  
-❌ No Purview registration of Foundry projects (use `foundation` tag to add this)
+- No Purview DSPM scanning of data sources  
+- No M365 KYD/DLP policies for Copilot  
+- No audit exports to external storage  
+- No Purview registration of Foundry projects (use `foundation` tag to add this)
 
 ---
 
@@ -257,7 +257,7 @@ Follow the [Deployment Guide](./docs/DeploymentGuide.md) for detailed prerequisi
 
 ## Prerequisites and costs
 
-> ⚠️ **IMPORTANT - Multiple Operator Accounts Required for Full Deployment**
+> **IMPORTANT - Multiple Operator Accounts Required for Full Deployment**
 >
 > Running `-Tags all` requires coordinating **multiple privileged identities**. A single user can complete the deployment if they hold all roles, but the `m365` tag requires interactive MFA from a desktop (not containers/Codespaces).
 >
@@ -286,7 +286,7 @@ Follow the [Deployment Guide](./docs/DeploymentGuide.md) for detailed prerequisi
 | [Log Analytics](https://azure.microsoft.com/pricing/details/monitor/) | Central log collection for diagnostics | Pay-as-you-go |
 | [Azure OpenAI / GPT capacity](https://azure.microsoft.com/pricing/details/cognitive-services/openai-service/) | Optional Content Safety or Foundry workloads | Usage based |
 
-Use the [Azure pricing calculator](https://azure.microsoft.com/pricing/calculator) and the guidance in [docs/payGo.md](./docs/payGo.md) to estimate and monitor spend. Remember to run `azd down` or delete the resource group when finished.
+Use the [Azure pricing calculator](https://azure.microsoft.com/pricing/calculator) and the guidance in [Cost Guidance](./docs/CostGuidance.md) to estimate and monitor spend. Remember to run `azd down` or delete the resource group when finished.
 
 ---
 
@@ -312,8 +312,8 @@ A data protection program is tasked with lighting up Microsoft Purview Data Secu
 - [Architecture Overview](./docs/ArchitectureOverview.md) - Technical architecture and class diagram
 - [Deployment Guide](./docs/DeploymentGuide.md)
 - [Troubleshooting Guide](./docs/TroubleshootingGuide.md)
-- [DSPM sales and stakeholder narrative](./docs/dspm-sales-narrative.md)
-- [Pay-as-you-go considerations](./docs/payGo.md)
+- [Why DSPM for AI?](./docs/WhyDSPM.md) - Value proposition and stakeholder communication
+- [Cost Guidance](./docs/CostGuidance.md) - Billing models and optimization tips
 - [Repository structure and script descriptions](./scripts/governance/README.md)
 
 ---
@@ -501,7 +501,7 @@ Populate `defenderForAI.enableDefenderForCloudPlans` (in `spec.dspm.template.jso
 
 Add or remove plan strings as needed; the `06-Enable-DefenderPlans.ps1` module iterates the array and skips any plan already turned on in the subscription.
 
-**Know Your Data capture (KYD):** run `./run.ps1 -Tags m365 -SpecPath ./spec.local.json` from a local PowerShell 7 session whenever you need to (re)enable Unified Audit, create the Secure interactions/KYD policy, or publish the DLP/label/retention settings baked into your spec. The script loads the Exchange Online Management module, prompts for MFA in your default browser, and creates the policy that stores prompts/responses in each user’s mailbox so the data inherits retention, eDiscovery, and Communication Compliance. See `docs/dspm-sales-narrative.md` (steps 2–3) and the Microsoft Learn article on [turning auditing on or off](https://learn.microsoft.com/en-us/purview/audit-log-enable-disable) for the exact operator walkthrough and objection handling.
+**Know Your Data capture (KYD):** run `./run.ps1 -Tags m365 -SpecPath ./spec.local.json` from a local PowerShell 7 session whenever you need to (re)enable Unified Audit, create the Secure interactions/KYD policy, or publish the DLP/label/retention settings baked into your spec. The script loads the Exchange Online Management module, prompts for MFA in your default browser, and creates the policy that stores prompts/responses in each user's mailbox so the data inherits retention, eDiscovery, and Communication Compliance. See [Why DSPM for AI?](./docs/WhyDSPM.md) (Steps 2–3) and the Microsoft Learn article on [turning auditing on or off](https://learn.microsoft.com/en-us/purview/audit-log-enable-disable) for the operator walkthrough.
 
 **Why the registration script matters:** `30-Foundry-RegisterResources.ps1` leverages the `aiFoundry` and `foundry.resources[]` sections in `spec.local.json`, validates each resource, and writes the metadata Purview’s DSPM blades use to associate Azure AI Foundry projects with your broader AI estate. Without that registration pass, Defender for Cloud may still discover the workspace, but Purview cannot correlate the DSPM recommendation state or surface “Secure interactions for enterprise AI apps” for that project, which is why rerunning the script keeps recommendations aligned with the rest of your environment.
 
@@ -574,7 +574,7 @@ Use this checklist with your stakeholders to understand which steps require huma
 | Tag                                                                         | What it runs / why it exists                                                                                                                                                                                                                                                                                  | Example command |
 | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------- |
 | `foundation`                                                                | Baseline Purview/DSPM bootstrap: `01-Ensure-ResourceGroup.ps1`, `02-Ensure-PurviewAccount.ps1`, data-source registration + first scans. Delivers the landing zone Purview needs before policies or scans proceed.                                                                                             | `./run.ps1 -Tags foundation -SpecPath ./spec.local.json` |
-| `m365`                                                                      | Exchange Online / Compliance Center steps that require interactive auth: connect session, enable Unified Audit, create the Know Your Data (Secure interactions) policy, and publish the DLP/label/retention settings from your spec. Run from a desktop with MFA access (see `docs/dspm-sales-narrative.md`). | `./run.ps1 -Tags m365 -SpecPath ./spec.local.json` |
+| `m365`                                                                      | Exchange Online / Compliance Center steps that require interactive auth: connect session, enable Unified Audit, create the Know Your Data (Secure interactions) policy, and publish the DLP/label/retention settings from your spec. Run from a desktop with MFA access (see [Why DSPM?](./docs/WhyDSPM.md)). | `./run.ps1 -Tags m365 -SpecPath ./spec.local.json` |
 | `dspm`                                                                      | Broader Purview governance tasks beyond the bootstrap: scan registration, audit subscriptions/exports (`20-21`), Azure policy assignments, tagging, posture validation. Combine with `foundation` for the full Purview story.                                                                                 | `./run.ps1 -Tags foundation,dspm -SpecPath ./spec.local.json` |
 | `defender`                                                                  | Defender for AI enablement scripts (`06-Enable-DefenderPlans.ps1`, `07-Enable-Diagnostics.ps1`) plus content-safety wiring. Requires the AI subscription/resource group fields in the spec.                                                                                                                   | `./run.ps1 -Tags defender -SpecPath ./spec.local.json` |
 | `foundry`                                                                   | Azure AI Foundry integration: resource registration, tagging, diagnostics, content safety, OneLake/Fabric registration (when enabled). Works off `aiFoundry` and `foundry.resources` blocks in the spec.                                                                                                      | `./run.ps1 -Tags foundry -SpecPath ./spec.local.json` |
@@ -621,7 +621,7 @@ Use whichever combination suits your workflow (for example, `-Tags m365` from a 
 - Fabric + OneLake placeholders live under `fabric.oneLakeRoots[]` and `fabric.workspaces[]`. Scripts `26-29` in `run.ps1` are commented out until they can gracefully ignore empty arrays, so populate these blocks now and uncomment the lines when you are ready to register/scan Fabric resources.
 - Need to postpone an Azure Policy assignment? Set `"enabled": false` on that entry in `azurePolicies`. The assignment script logs the skip and leaves the declaration in place for later.
 - Want a field-by-field explanation? See `docs/spec-local-reference.md` for the table that maps each spec parameter to the scripts that consume it.
-- Know Your Data evidence flow is fully spec-driven: the `dlpPolicy`, `labels`, and `retentionPolicies` blocks define what the `m365` tag publishes, while `activityExport` controls the Management Activity/Audit offload that keeps KYD prompts and alerting in sync. Pair this README with `docs/dspm-sales-narrative.md` to brief operators on the why/how.
+- Know Your Data evidence flow is fully spec-driven: the `dlpPolicy`, `labels`, and `retentionPolicies` blocks define what the `m365` tag publishes, while `activityExport` controls the Management Activity/Audit offload that keeps KYD prompts and alerting in sync. See [Why DSPM for AI?](./docs/WhyDSPM.md) to understand the business value of each step.
 
 ---
 
@@ -629,8 +629,8 @@ Use whichever combination suits your workflow (for example, `-Tags m365` from a 
 
 - `scripts/governance/README.md` – Microsoft Purview DSPM automation cookbook (policies, scans, audit exports, Foundry integrations).
 - `scripts/defender/README.md` – Defender for AI enablement and diagnostics.
-- `docs/dspm-sales-narrative.md` – business outcome framing for stakeholders.
-- `docs/payGo.md` – optional PAYG cost considerations.
+- [Why DSPM for AI?](./docs/WhyDSPM.md) – Value proposition and stakeholder communication.
+- [Cost Guidance](./docs/CostGuidance.md) – Billing models and optimization tips.
 
 ---
 
