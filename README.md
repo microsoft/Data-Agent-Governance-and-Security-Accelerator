@@ -1,6 +1,6 @@
 # Data Agent Governance and Security Accelerator
 
-Light up Microsoft Purview Data Security Posture Management (DSPM) for AI to safeguard Microsoft 365 Copilot, Azure AI Foundry, Microsoft Fabric, and custom agentic solutions. Deploy end-to-end governance controls, automate registration and scanning, wire telemetry into Defender for AI, and export auditable evidence for regulators.
+Enable Microsoft Purview Data Security Posture Management (DSPM) for AI to safeguard Microsoft 365 Copilot, Azure AI Foundry, Microsoft Fabric, and custom agentic solutions. Deploy end-to-end governance controls, automate registration and scanning, integrate telemetry with Defender for AI, and export auditable evidence for regulators.
 
 <div align="center">
 
@@ -10,7 +10,9 @@ Light up Microsoft Purview Data Security Posture Management (DSPM) for AI to saf
 
 ---
 
-## User story
+<h2><img src="./docs/images/readme/user-story.png" width="48" />
+User story
+</h2>
 
 Organizations deploying AI across Microsoft 365 Copilot, Azure AI Foundry, and custom agents face a common challenge: **how do you govern AI interactions at scale while maintaining compliance?**
 
@@ -28,7 +30,9 @@ Without automation, this requires weeks of manual configuration across multiple 
 
 ---
 
-## ![](./docs/images/readme/solution-overview.png) Solution overview
+<h2><img src="./docs/images/readme/solution-overview.png" width="48" />
+Solution overview
+</h2>
 
 This accelerator orchestrates Azure and Microsoft 365 governance artifacts through PowerShell and Azure Developer CLI hooks:
 
@@ -72,7 +76,9 @@ This accelerator orchestrates Azure and Microsoft 365 governance artifacts throu
 
 ---
 
-## ![](./docs/images/readme/quick-deploy.png) Quick deploy
+<h2><img src="./docs/images/readme/quick-deploy.png" width="48" />
+Quick deploy
+</h2>
 
 Deploy this solution to your Azure subscription using the Azure Developer CLI.
 
@@ -154,7 +160,9 @@ Use the [Azure pricing calculator](https://azure.microsoft.com/pricing/calculato
 
 ---
 
-## ![](./docs/images/readme/business-scenario.png) Business scenario
+<h2><img src="./docs/images/readme/business-scenario.png" width="48" />
+Business scenario
+</h2>
 
 ![DSPM for all services](./docs/doc-images/DSPM-for-all-services-steps.png)
 
@@ -192,7 +200,9 @@ With this accelerator, the team captures those requirements in a spec file, exec
 
 ---
 
-## ![](./docs/images/readme/supporting-documentation.png) Supporting documentation
+<h2><img src="./docs/images/readme/supporting-documentation.png" width="48" />
+Supporting documentation
+</h2>
 
 | Document | Description |
 | -------- | ----------- |
