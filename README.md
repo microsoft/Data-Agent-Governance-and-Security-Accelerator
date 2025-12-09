@@ -24,7 +24,7 @@ A data protection team is tasked with securing AI workloads across the enterpris
 - **Monitor** AI interactions through audit logs and compliance dashboards
 - **Demonstrate** compliance to regulators with exportable evidence
 
-Without automation, this requires weeks of manual configuration across multiple portals: Purview, Defender for Cloud, Azure Policy, Exchange Online, and more. Each AI project means repeating the same steps.
+Without automation, this requires significant manual configuration across multiple portals: Purview, Defender for Cloud, Azure Policy, Exchange Online, and more. Each AI project means repeating the same steps.
 
 **This accelerator solves that problem.** Capture your governance requirements in a single spec file, run `azd up`, and produce verifiable evidence that DSPM for AI and Defender for AI are enforcing policies, logging activity, and keeping every AI workflow compliant.
 
