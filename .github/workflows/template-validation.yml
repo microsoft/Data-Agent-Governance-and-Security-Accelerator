@@ -15,15 +15,14 @@ jobs:
   template_validation_job:
     runs-on: ubuntu-latest
     name: Validate Template Standards
-    environment: azd-template-gallery
     steps:
       - uses: actions/checkout@v4
 
       - uses: microsoft/template-validation-action@Latest
         id: validation
         with:
-          validateAzd: ${{ vars.AZD_VALIDATE }}
-          useDevContainer: ${{ vars.AZD_USE_DEV_CONTAINER }}
+          validateAzd: false
+          useDevContainer: false
         env:
           AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
           AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
