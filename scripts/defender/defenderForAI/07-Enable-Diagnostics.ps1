@@ -18,6 +18,25 @@ foreach($cat in $cats){
 if(-not $logCategories){ $logCategories = @("AllLogs") }
 if(-not $metricCategories){ $metricCategories = @("AllMetrics") }
 
+function Resolve-RequestedCategories {
+  param(
+    [string[]]$Requested,
+    [string[]]$Available,
+    [string]$AllToken,
+    [string]$TypeName,
+    [string]$ResourceLabel
+  )
+
+  if(-not $Available -or $Available.Count -eq 0){ return @() }
+  if($Requested -contains $AllToken){ return @($Available) }
+  $resolved = @($Requested | Where-Object { $Available -contains $_ })
+  $missing = @($Requested | Where-Object { $Available -notcontains $_ })
+  if($missing.Count -gt 0){
+    Write-Host "Skipping unsupported $TypeName categories on ${ResourceLabel}: $($missing -join ', ')" -ForegroundColor Yellow
+  }
+  return $resolved
+}
+
 function Resolve-WorkspaceResourceId([string]$workspaceId, $specObj){
   if(-not $workspaceId){ throw "Log Analytics workspace identifier is empty." }
   if($workspaceId -match '^/'){ return $workspaceId }
@@ -73,8 +92,20 @@ foreach($r in $spec.foundry.resources){
   if($diagResourceId -ne $r.resourceId){
     Write-Host "Diagnostics not supported at project scope; using parent $diagResourceId" -ForegroundColor Yellow
   }
-  $logSettings = foreach($log in $logCategories){ New-AzDiagnosticSettingLogSettingsObject -Enabled $true -Category $log }
-  $metricSettings = foreach($metric in $metricCategories){ New-AzDiagnosticSettingMetricSettingsObject -Enabled $true -Category $metric }
+  $availableCats = Get-AzDiagnosticSettingCategory -ResourceId $diagResourceId -ErrorAction SilentlyContinue
+  $availableLogs = @($availableCats | Where-Object { $_.CategoryType -eq 'Logs' } | Select-Object -ExpandProperty Name)
+  $availableMetrics = @($availableCats | Where-Object { $_.CategoryType -eq 'Metrics' } | Select-Object -ExpandProperty Name)
+
+  $resolvedLogs = Resolve-RequestedCategories -Requested $logCategories -Available $availableLogs -AllToken 'AllLogs' -TypeName 'log' -ResourceLabel $scopeName
+  $resolvedMetrics = Resolve-RequestedCategories -Requested $metricCategories -Available $availableMetrics -AllToken 'AllMetrics' -TypeName 'metric' -ResourceLabel $scopeName
+
+  if((-not $resolvedLogs -or $resolvedLogs.Count -eq 0) -and (-not $resolvedMetrics -or $resolvedMetrics.Count -eq 0)){
+    Write-Host "No supported diagnostic categories for $scopeName. Skipping." -ForegroundColor Yellow
+    continue
+  }
+
+  $logSettings = foreach($log in $resolvedLogs){ New-AzDiagnosticSettingLogSettingsObject -Enabled $true -Category $log }
+  $metricSettings = foreach($metric in $resolvedMetrics){ New-AzDiagnosticSettingMetricSettingsObject -Enabled $true -Category $metric }
   New-AzDiagnosticSetting -Name $name -ResourceId $diagResourceId -WorkspaceId $workspaceResourceId -Log $logSettings -Metric $metricSettings | Out-Null
   Write-Host "Enabled diagnostics for $scopeName" -ForegroundColor Green
 }
