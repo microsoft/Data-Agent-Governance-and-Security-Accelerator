@@ -6,72 +6,203 @@
   
   "tenantId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
   "subscriptionId": "12345678-90ab-cdef-1234-567890abcdef",
+  "resourceGroup": "rg-dagsa-governance",
   "location": "eastus2",
-  "resourceGroupName": "rg-dagsa-governance",
-  "logAnalyticsWorkspaceId": "/subscriptions/12345678-90ab-cdef-1234-567890abcdef/resourceGroups/rg-dagsa-governance/providers/Microsoft.OperationalInsights/workspaces/law-dagsa-logs",
-
-  "//": "=== TAGS (Control which script modules run) ===",
-  "_tagOptions": "foundation | dspm | defender | foundry | m365 | all",
-  "tags": ["foundation", "dspm", "defender", "foundry"],
-
-  "//": "=== MICROSOFT PURVIEW CONFIGURATION ===",
-  
-  "purview": {
-    "accountName": "purv-contoso-governance",
-    "resourceGroupName": "rg-purview-prod",
-    "managedResourceGroupName": "rg-purview-prod-managed",
-    
-    "_comment": "Data sources to register and scan",
-    "dataSources": [
-      {
-        "name": "contoso-ai-foundry-project",
-        "kind": "AzureAIService",
-        "resourceId": "/subscriptions/12345678-90ab-cdef-1234-567890abcdef/resourceGroups/rg-ai-foundry/providers/Microsoft.CognitiveServices/accounts/ai-contoso-project"
-      },
-      {
-        "name": "contoso-storage-data",
-        "kind": "AzureStorage",
-        "resourceId": "/subscriptions/12345678-90ab-cdef-1234-567890abcdef/resourceGroups/rg-data/providers/Microsoft.Storage/storageAccounts/stcontosodatalake"
-      }
-    ],
-    
-    "scans": [
-      {
-        "dataSourceName": "contoso-ai-foundry-project",
-        "scanName": "weekly-ai-scan",
-        "scanLevel": "Incremental"
-      }
-    ]
-  },
+  "purviewAccount": "purv-contoso-governance",
+  "purviewResourceGroup": "rg-purview-prod",
+  "purviewSubscriptionId": "12345678-90ab-cdef-1234-567890abcdef",
+  "logAnalyticsWorkspaceId": "612a7918-ddf5-4224-b8f9-aae1696708c1",
 
   "//": "=== AI FOUNDRY / COGNITIVE SERVICES ===",
   
+  "aiResourceGroup": "rg-ai-foundry",
+  "aiSubscriptionId": "12345678-90ab-cdef-1234-567890abcdef",
   "aiFoundry": {
-    "projectName": "ai-contoso-project",
-    "resourceGroupName": "rg-ai-foundry",
-    "resourceId": "/subscriptions/12345678-90ab-cdef-1234-567890abcdef/resourceGroups/rg-ai-foundry/providers/Microsoft.CognitiveServices/accounts/ai-contoso-project",
-    
-    "_comment": "Content Safety configuration",
-    "contentSafety": {
-      "enabled": true,
-      "blocklistNames": ["contoso-blocked-terms", "pii-patterns"],
-      "severityThresholds": {
-        "hate": 2,
-        "selfHarm": 2,
-        "sexual": 2,
-        "violence": 2
+    "name": "ai-contoso-project",
+    "resourceId": "/subscriptions/12345678-90ab-cdef-1234-567890abcdef/resourceGroups/rg-ai-foundry/providers/Microsoft.CognitiveServices/accounts/ai-contoso-project/projects/ai-contoso-project"
+  },
+  "foundry": {
+    "resources": [
+      {
+        "name": "ai-contoso-project",
+        "resourceId": "/subscriptions/12345678-90ab-cdef-1234-567890abcdef/resourceGroups/rg-ai-foundry/providers/Microsoft.CognitiveServices/accounts/ai-contoso-project",
+        "diagnostics": true,
+        "tags": {
+          "Environment": "Production",
+          "Owner": "AIGovernance",
+          "CostCenter": "AI-001"
+        }
       }
+    ],
+    "contentSafety": {
+      "endpoint": "https://contoso-content-safety.cognitiveservices.azure.com/",
+      "apiKeySecretRef": {
+        "keyVaultResourceId": "/subscriptions/12345678-90ab-cdef-1234-567890abcdef/resourceGroups/rg-security/providers/Microsoft.KeyVault/vaults/kv-contoso-secrets",
+        "secretName": "content-safety-api-key"
+      },
+      "textBlocklists": [
+        {
+          "blocklistName": "contoso-blocked-terms",
+          "description": "Corporate blocked terms list",
+          "terms": [
+            "confidential-project-codename",
+            "internal-auth-token",
+            "proprietary-algorithm",
+            "customer-ssn",
+            "trade-secret"
+          ]
+        },
+        {
+          "blocklistName": "contoso-competitor-terms",
+          "description": "Competitor and sensitive business terms",
+          "terms": [
+            "competitor-name-1",
+            "acquisition-target",
+            "unannounced-product",
+            "merger-discussions"
+          ]
+        }
+      ],
+      "harmSeverityThreshold": 2
     }
   },
 
-  "//": "=== FABRIC / ONELAKE (Optional - for data lake governance) ===",
+  "//": "=== DATA SOURCES TO REGISTER AND SCAN (Source systems) ===",
+  "//": "IMPORTANT: Purview managed identity must have permissions on each data source before scanning",
+  
+  "dataSources": [
+    {
+      "name": "contoso-training-data-storage",
+      "type": "AzureStorage",
+      "resourceId": "/subscriptions/12345678-90ab-cdef-1234-567890abcdef/resourceGroups/rg-data/providers/Microsoft.Storage/storageAccounts/stcontosodatalake",
+      "requiredPermissions": {
+        "principalType": "Purview Managed Identity", 
+        "roles": ["Storage Blob Data Reader"],
+        "notes": "Required for scanning blob storage containers and files"
+      }
+    },
+    {
+      "name": "contoso-customer-database",
+      "type": "AzureSqlDatabase",
+      "resourceId": "/subscriptions/12345678-90ab-cdef-1234-567890abcdef/resourceGroups/rg-data/providers/Microsoft.Sql/servers/sql-contoso/databases/customers",
+      "requiredPermissions": {
+        "principalType": "Purview Managed Identity",
+        "roles": ["SQL: db_datareader"],
+        "notes": "Requires SQL authentication or Purview managed identity as Azure AD user with db_datareader role"
+      }
+    }
+  ],
+  "permissionSetupNotes": [
+    "MANUAL STEP: Grant Purview managed identity access to each data source before running scans",
+    "For Storage: az role assignment create --assignee <purview-managed-identity> --role 'Storage Blob Data Reader' --scope <storage-resource-id>",
+    "For SQL DB: Add Purview managed identity as Azure AD user and grant db_datareader role",
+    "For Fabric: Grant Purview service principal 'Viewer' role on Fabric workspace"
+  ],
+  "scans": [
+    {
+      "dataSourceName": "contoso-training-data-storage",
+      "scanName": "weekly-storage-scan",
+      "rulesetType": "System",
+      "rulesetName": "AzureStorage"
+    },
+    {
+      "dataSourceName": "contoso-customer-database",
+      "scanName": "weekly-database-scan",
+      "rulesetType": "System",
+      "rulesetName": "AzureSqlDatabase"
+    }
+  ],
+
+  "//": "=== FABRIC WORKSPACES (Optional - for data lake governance) ===",
+  "//": "Govern Fabric workspaces, lakehouses, and their sensitivity labeling",
+  "//": "IMPORTANT: Purview service principal must have Viewer role on each Fabric workspace",
   
   "fabric": {
-    "enabled": false,
-    "_comment": "Set enabled to true and populate these if scanning Fabric/OneLake",
-    "workspaceId": "",
-    "lakehouseName": "",
-    "oneLakeEndpoint": ""
+    "workspaces": [
+      {
+        "name": "contoso-data-workspace",
+        "workspaceId": "12345678-90ab-cdef-1234-567890abcdef",
+        "capacityId": "98765432-10ba-fedc-4321-ba0987654321",
+        "scanName": "fabric-workspace-scan",
+        "sensitivityLabel": "Fabric-Confidential-Data",
+        "requiredPermissions": {
+          "principalType": "Purview Service Principal",
+          "roles": ["Fabric Workspace Viewer"],
+          "notes": "Grant in Fabric workspace settings under 'Manage Access'"
+        },
+        "lakehouses": [
+          {
+            "name": "contoso-training-lakehouse",
+            "lakehouseId": "abcdef12-3456-7890-abcd-ef1234567890",
+            "scanName": "training-data-scan",
+            "sensitivityLabel": "Fabric-AI-Training-Data"
+          },
+          {
+            "name": "contoso-pii-lakehouse",
+            "lakehouseId": "fedcba98-7654-3210-fedc-ba9876543210",
+            "scanName": "pii-data-scan",
+            "sensitivityLabel": "Fabric-PII-Restricted"
+          }
+        ],
+        "semanticModels": [
+          {
+            "name": "contoso-customer-insights-model",
+            "modelId": "11111111-2222-3333-4444-555555555555",
+            "scanName": "customer-model-scan",
+            "sensitivityLabel": "Fabric-Confidential-Data"
+          },
+          {
+            "name": "contoso-ai-training-metrics-model",
+            "modelId": "66666666-7777-8888-9999-aaaaaaaaaaaa",
+            "scanName": "ai-metrics-scan",
+            "sensitivityLabel": "Fabric-AI-Training-Data"
+          },
+          {
+            "name": "contoso-public-dashboard-model",
+            "modelId": "bbbbbbbb-cccc-dddd-eeee-ffffffffffff",
+            "scanName": "public-dashboard-scan",
+            "sensitivityLabel": "Fabric-Internal-Use"
+          }
+        ]
+      }
+    ],
+    "sensitivityLabels": [
+      {
+        "name": "Fabric-Public",
+        "displayName": "Public Data",
+        "description": "Data that can be openly shared",
+        "priority": 1,
+        "color": "#00FF00"
+      },
+      {
+        "name": "Fabric-Internal-Use",
+        "displayName": "Internal Use Only",
+        "description": "Data for internal business use",
+        "priority": 2,
+        "color": "#FFFF00"
+      },
+      {
+        "name": "Fabric-Confidential-Data",
+        "displayName": "Confidential Business Data",
+        "description": "Sensitive business information",
+        "priority": 3,
+        "color": "#FF8800"
+      },
+      {
+        "name": "Fabric-AI-Training-Data",
+        "displayName": "AI Training Dataset",
+        "description": "Data specifically used for AI model training",
+        "priority": 4,
+        "color": "#FF0088"
+      },
+      {
+        "name": "Fabric-PII-Restricted",
+        "displayName": "PII/Restricted Data",
+        "description": "Personally identifiable or legally restricted data",
+        "priority": 5,
+        "color": "#FF0000"
+      }
+    ]
   },
 
   "//": "=== DEFENDER FOR AI ===",
@@ -79,93 +210,102 @@
   "defenderForAI": {
     "enableDefenderForCloudPlans": [
       "CognitiveServices",
-      "StorageAccounts",
-      "KeyVaults"
+      "Storage",
+      "Containers"
     ],
-    "logAnalyticsWorkspaceId": "/subscriptions/12345678-90ab-cdef-1234-567890abcdef/resourceGroups/rg-dagsa-governance/providers/Microsoft.OperationalInsights/workspaces/law-dagsa-logs",
+    "logAnalyticsWorkspaceId": "612a7918-ddf5-4224-b8f9-aae1696708c1",
     "diagnosticCategories": [
-      "AuditEvent",
-      "RequestResponse",
-      "Trace"
+      "Audit",
+      "RequestResponse", 
+      "AllMetrics"
     ]
   },
 
-  "//": "=== M365 COMPLIANCE (Requires m365 tag and E5 license) ===",
+  "//": "=== M365 COMPLIANCE (DLP Policy - Single Policy Object) ===",
   
-  "m365": {
-    "enabled": false,
-    "_comment": "Set enabled to true if you have M365 E5 and want DLP/retention policies",
-    
-    "sensitivityLabels": [
+  "dlpPolicy": {
+    "name": "AI Egress Control",
+    "mode": "Enforce",
+    "locations": {
+      "Exchange": "All",
+      "SharePoint": "All", 
+      "OneDrive": "All"
+    },
+    "rules": [
       {
-        "name": "Contoso-Confidential-AI",
-        "displayName": "Confidential - AI Data",
-        "tooltip": "Contains AI training data or model outputs",
-        "enabled": true
-      }
-    ],
-    
-    "dlpPolicies": [
-      {
-        "name": "DLP-AI-PII-Protection",
-        "comment": "Prevent PII in AI prompts and responses",
-        "enabled": true,
-        "locations": ["Exchange", "SharePoint", "OneDrive", "Teams"],
-        "rules": [
+        "name": "Block Sensitive Data to AI Destinations",
+        "sensitiveInfoTypes": [
           {
-            "name": "Block-SSN-in-AI-Content",
-            "sensitiveInfoTypes": ["U.S. Social Security Number (SSN)"],
-            "action": "BlockAccess"
+            "name": "Credit Card Number",
+            "count": 1,
+            "confidence": 85
+          },
+          {
+            "name": "U.S. Social Security Number (SSN)",
+            "count": 1,
+            "confidence": 85
           }
-        ]
-      }
-    ],
-    
-    "retentionPolicies": [
-      {
-        "name": "Retain-AI-Audit-7Years",
-        "comment": "Regulatory retention for AI interaction logs",
-        "enabled": true,
-        "duration": "P7Y",
-        "locations": ["Exchange", "SharePoint"]
+        ],
+        "blockAccess": true,
+        "notifyUser": true
       }
     ]
   },
 
-  "//": "=== AZURE POLICY ASSIGNMENTS ===",
+  "//": "=== M365 SENSITIVITY LABELS (SharePoint/OneDrive/Teams only) ===",
+  "//": "Note: Fabric has separate labeling system defined in fabric.sensitivityLabels above",
   
-  "azurePolicies": [
+  "labels": [
     {
-      "name": "Require-Diagnostic-Settings-AI",
-      "displayName": "Require diagnostic settings on Cognitive Services",
-      "definitionName": "Deploy-Diagnostics-CognitiveServices",
-      "scope": "/subscriptions/12345678-90ab-cdef-1234-567890abcdef/resourceGroups/rg-ai-foundry",
-      "enabled": true,
-      "parameters": {
-        "logAnalyticsWorkspaceId": "/subscriptions/12345678-90ab-cdef-1234-567890abcdef/resourceGroups/rg-dagsa-governance/providers/Microsoft.OperationalInsights/workspaces/law-dagsa-logs"
+      "name": "M365-Confidential-AI",
+      "publishPolicyName": "Publish: Confidential AI Documents",
+      "encryptionEnabled": false,
+      "publishScopes": {
+        "Exchange": "All",
+        "SharePoint": "All",
+        "OneDrive": "All",
+        "Teams": "All"
+      }
+    },
+    {
+      "name": "M365-AI-Model-Outputs",
+      "publishPolicyName": "Publish: AI Generated Content",
+      "encryptionEnabled": true,
+      "publishScopes": {
+        "Exchange": "All",
+        "SharePoint": "All",
+        "OneDrive": "All"
       }
     }
   ],
 
-  "//": "=== AUDIT EXPORT (For compliance evidence) ===",
+  "//": "=== RETENTION POLICIES ===",
+  
+  "retentionPolicies": [
+    {
+      "name": "Retain-AI-Audit-7Years",
+      "rules": [
+        {
+          "duration": "P7Y",
+          "action": "Keep"
+        }
+      ],
+      "locations": {
+        "Exchange": "All",
+        "SharePoint": "All"
+      }
+    }
+  ],
+
+  "//": "=== ACTIVITY EXPORT (For compliance evidence) ===",
   
   "activityExport": {
     "outputPath": "./exports/audit-logs",
     "contentTypes": [
       "Audit.AzureActiveDirectory",
-      "Audit.Exchange",
+      "Audit.Exchange", 
       "Audit.SharePoint",
       "Audit.General"
     ]
-  },
-
-  "//": "=== RESOURCE TAGS (Applied to created Azure resources) ===",
-  
-  "resourceTags": {
-    "Environment": "Production",
-    "Project": "AI-Governance",
-    "CostCenter": "IT-Security-001",
-    "Owner": "security-team@contoso.com",
-    "Compliance": "SOC2-HIPAA"
   }
 }

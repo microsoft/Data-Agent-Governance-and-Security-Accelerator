@@ -18,10 +18,8 @@ if ($spec.foundry -and $spec.foundry.resources) {
     $res = Get-AzResource -ResourceId $r.resourceId -ErrorAction SilentlyContinue
     if(-not $res){ Write-Warning "Resource not found, skipping tag update: $($r.resourceId)"; continue }
     if($res.ResourceType -and $res.ResourceType -match '/projects'){ Write-Host "Skipping tag update for project-level resource $($res.ResourceId); Azure tags only apply to the parent account." -ForegroundColor Yellow; continue }
-    $merged = @{}
-    if($res.Tags -is [Collections.IDictionary]){ $merged += $res.Tags }
-    $merged += $desiredTags
-    Set-AzResource -ResourceId $res.ResourceId -Tag $merged -Force | Out-Null
+    # Use Update-AzTag to avoid full resource deserialization issues
+    Update-AzTag -ResourceId $res.ResourceId -Tag $desiredTags -Operation Merge | Out-Null
     Write-Host "Tagged $($res.Name)" -ForegroundColor Green
   }
 } else {
