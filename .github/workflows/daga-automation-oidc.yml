@@ -20,7 +20,7 @@ jobs:
       HAS_M365_CERT: ${{ secrets.DAGA_M365_CERT_PFX != '' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Azure login (federated)
         uses: azure/login@v2
