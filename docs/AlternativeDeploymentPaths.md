@@ -124,15 +124,18 @@ Populate only these sections in `spec.local.json`:
 {
   "tenantId": "<your-tenant-id>",
   "subscriptionId": "<subscription-with-foundry>",
+  "aiResourceGroup": "<foundry-resource-group>",
+  "aiSubscriptionId": "<subscription-with-foundry>",
   "aiFoundry": {
-    "subscriptionId": "<same-subscription>",
-    "resourceGroupName": "<foundry-resource-group>"
+    "name": "<foundry-project-name>",
+    "resourceId": "/subscriptions/<subscription-guid>/resourceGroups/<foundry-resource-group>/providers/Microsoft.CognitiveServices/accounts/<account-name>/projects/<foundry-project-name>"
   },
   "foundry": {
     "resources": [
       {
-        "name": "<foundry-project-name>",
-        "resourceGroup": "<foundry-resource-group>"
+        "name": "<friendly-resource-name>",
+        "resourceId": "/subscriptions/<subscription-guid>/resourceGroups/<foundry-resource-group>/providers/Microsoft.CognitiveServices/accounts/<account-name>",
+        "diagnostics": true
       }
     ]
   },
@@ -141,6 +144,8 @@ Populate only these sections in `spec.local.json`:
   }
 }
 ```
+
+Use full Azure resource IDs for `aiFoundry.resourceId` and each `foundry.resources[].resourceId`. This matches the schema described in [spec-local-reference.md](./spec-local-reference.md).
 
 ### Deploy commands
 
@@ -173,7 +178,7 @@ Set-AzContext -Subscription <subscriptionId>
 
 ### Devcontainer / azd post-provision flow
 
-The `azure.yaml` and `infra/main.bicep` let you run `azd up` purely to trigger the post-provision hook - no infrastructure needs to be deployed.
+The `azure.yaml` and `infra/main.bicepparam` let you run `azd up` to trigger the post-provision hook using the repo's parameterized defaults.
 
 The hook (`hooks/postprovision.ps1`) reuses the current `azd auth login` context by importing Azure CLI tokens into Az PowerShell before invoking `run.ps1`.
 
@@ -187,9 +192,9 @@ The hook (`hooks/postprovision.ps1`) reuses the current `azd auth login` context
 
 Edit `infra/main.bicepparam` to control:
 - `dagaSpecPath` - spec file path
-- `dagaPostprovisionTags` - comma-separated tags to run
-- `dagaPostprovisionConnectM365` - enable M365 steps
-- `dagaPostprovisionM365Upn` - UPN for M365 auth
+- `dagaTags` - tags to run after provisioning
+- `dagaConnectM365` - enable M365 steps
+- `dagaM365UserPrincipalName` - UPN for M365 auth
 
 ---
 
@@ -331,7 +336,7 @@ Point `run.ps1 -SpecPath` to the one you need.
 | ------- | ------- | ---------------- |
 | `tenantId`, `subscriptionId` | Target tenant and subscription | All |
 | `purview.*` | Purview account and data source settings | `foundation`, `dspm` |
-| `aiFoundry.*` | Foundry subscription and resource group | `foundry`, `defender` |
+| `aiResourceGroup`, `aiSubscriptionId`, `aiFoundry.*` | Foundry resource scope and primary project reference | `foundry`, `defender` |
 | `foundry.resources[]` | List of Foundry projects to govern | `foundry` |
 | `defenderForAI.*` | Defender plans to enable | `defender` |
 | `dlpPolicy`, `labels`, `retentionPolicies` | M365 compliance settings | `m365` |

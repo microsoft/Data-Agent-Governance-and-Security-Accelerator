@@ -1,12 +1,12 @@
 # Data Agent Governance and Security Accelerator
 
-Enable Microsoft Purview Data Security Posture Management (DSPM) for AI to safeguard Microsoft 365 Copilot, Microsoft Foundry, Microsoft Fabric, and custom agentic solutions. Deploy end-to-end governance controls, automate registration and scanning, integrate telemetry with Defender for AI, and export auditable evidence for regulators.
+Enable Microsoft Purview Data Security Posture Management (DSPM) for AI across Microsoft 365 Copilot, Microsoft Foundry, Microsoft Fabric, and custom AI solutions with a spec-driven deployment and governance workflow.
 
 Includes Fabric lakehouse Sensitivity Labels configuration and application through the `spec.local.json` workflow.
 
 <div align="center">
 
-[**FEATURES**](#features) | [**GETTING STARTED**](#getting-started) | [**GUIDANCE**](#guidance) | [**RESOURCES**](#resources)
+[**START HERE**](#start-here) | [**GETTING STARTED**](#getting-started) | [**GUIDANCE**](#guidance) | [**RESOURCES**](#resources)
 
 </div>
 
@@ -20,21 +20,34 @@ For a more comprehensive list of best practices and security recommendations for
 
 ---
 
-## <img src="./docs/images/readme/user-story.png" width="48" alt="User Story" /> User story
+## Start Here
 
-Organizations deploying AI across Microsoft 365 Copilot, Microsoft Foundry, and custom agents face a common challenge: **how do you govern AI interactions at scale while maintaining compliance?**
+This accelerator is designed for security, compliance, and data governance teams that need to onboard AI workloads faster, apply consistent controls, and export evidence for audit or regulatory review.
 
-A data protection team is tasked with securing AI workloads across the enterprise. They need to:
+### What this accelerator does
 
-- **Discover** where AI interactions occur - which apps, which data sources, which users
-- **Classify** sensitive data flowing through AI prompts and responses
-- **Protect** data with policies that prevent sensitive information from leaking through AI systems
-- **Monitor** AI interactions through audit logs and compliance dashboards
-- **Demonstrate** compliance to regulators with exportable evidence
+- Configures Microsoft Purview DSPM for AI onboarding and governance automation
+- Governs Microsoft Foundry resources with Defender for Cloud, diagnostics, tagging, and Content Safety integration
+- Supports Fabric workspace and lakehouse sensitivity workflows through `spec.local.json`
+- Exports audit and compliance evidence for downstream review
 
-Without automation, this requires significant manual configuration across multiple portals: Purview, Defender for Cloud, Azure Policy, Exchange Online, and more. Each AI project means repeating the same steps.
+### What to expect
 
-**This accelerator solves that problem.** Capture your governance requirements in a single spec file, run `azd up`, and produce verifiable evidence that DSPM for AI and Defender for AI are enforcing policies, logging activity, and keeping every AI workflow compliant.
+- The repo is optimized for governance automation rather than application-only samples
+- The fastest path still includes validation and a few manual follow-up steps in Microsoft Purview and Defender for Cloud
+- Some scenarios require Azure, Purview, and Microsoft 365 permissions that may involve more than one operator
+
+### Recommended first path
+
+For a first run, use the default `azd up` experience from a local VS Code environment, devcontainer, or Codespaces session.
+
+Use a different path only when you have a clear reason:
+
+| Situation | Better path |
+| --- | --- |
+| You only want to rerun specific modules | `pwsh ./run.ps1 -Tags ... -SpecPath ./spec.local.json` |
+| You need Microsoft 365 compliance steps with MFA | Run the `m365` tag from a desktop PowerShell 7 session |
+| You are productionizing after a successful manual run | Use CI/CD or GitHub Actions |
 
 ---
 
@@ -42,46 +55,10 @@ Without automation, this requires significant manual configuration across multip
 
 This accelerator orchestrates Azure and Microsoft 365 governance artifacts through PowerShell and Azure Developer CLI hooks:
 
-- Automates Purview DSPM for AI onboarding (resource groups, Purview account checks, data-source registration, scans, DLP/label/retention policies, audit exports)
-- Applies Fabric lakehouse sensitivity labels from `spec.local.json` and validates label resolution before apply.
-- Governs Microsoft Foundry projects with Azure Policy, Defender for Cloud, Content Safety blocklists, diagnostics, and tagging
-- Ships telemetry to Log Analytics and exports compliance evidence for downstream analytics or regulators
-- Provides repeatable CI/Desktop experiences through spec-controlled tags and azd post-provision hooks
-
-### Solution architecture
-
-![Data Agent governance architecture](./docs/doc-images/architectureDAGSA.png)
-
-## Features
-
-<details open>
-<summary>Click to view the core capabilities provided by this accelerator</summary>
-
-| Feature | Description |
-| ------- | ----------- |
-| **Spec-driven DSPM for AI enablement** | Copy `spec.dspm.template.json`, populate tenant data, and let the scripts create Purview accounts, data sources, scans, KYD/DLP/retention policies, and audit exports without portal clicks. |
-| **Cross-cloud posture telemetry** | Stream diagnostics to Log Analytics, ensure Secure Interactions/KYD capture prompts and responses, and collect compliance inventory snapshots for auditors. |
-| **CI + desktop friendly automation** | Run `azd up` to replay deterministic checklists in devcontainers, Codespaces, or local shells. |
-| **Extensible evidence exports** | Reuse the audit export, compliance inventory, and tagging scripts as building blocks for bespoke regulator packages or SIEM pipelines. |
-
-</details>
-
-### How to customize
-
-- [Author and extend the spec contract](./spec.dspm.template.json) for each tenant/subscription
-- [Review the value proposition](./docs/WhyDSPM.md) to communicate benefits to stakeholders
-- [Understand cost implications](./docs/CostGuidance.md) before enabling paid features
-- Extend stub scripts (for example `15-Create-SensitiveInfoType-Stub.ps1`) with organization-specific controls
-
-### Additional resources
-
-- [Architecture Overview](./docs/ArchitectureOverview.md) - Technical architecture and class diagram
-- [Deployment Guide](./docs/DeploymentGuide.md) - Comprehensive step-by-step instructions
-- [Alternative Deployment Paths](./docs/AlternativeDeploymentPaths.md) - CI/CD, run.ps1 tags, M365 desktop deployment
-- [Spec File Reference](./docs/spec-local-reference.md) - Field-by-field `spec.local.json` documentation, including Fabric workspace/lakehouse sensitivity label configuration
-- [Troubleshooting Guide](./docs/TroubleshootingGuide.md)
-
----
+- Automates Purview DSPM for AI onboarding, policy configuration, scans, and exports
+- Applies Fabric lakehouse sensitivity labels from `spec.local.json` after validating label resolution
+- Governs Microsoft Foundry projects with Azure Policy, Defender for Cloud, diagnostics, tagging, and Content Safety controls
+- Ships telemetry to Log Analytics and exports auditable evidence for downstream teams
 
 ## Getting Started
 
@@ -96,11 +73,21 @@ Deploy this solution to your Azure subscription using the Azure Developer CLI.
 | [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/microsoft/Data-Agent-Governance-and-Security-Accelerator) | [![Open in Dev Containers](https://img.shields.io/static/v1?style=for-the-badge&label=Dev%20Containers&message=Open&color=blue&logo=visualstudiocode)](https://vscode.dev/redirect?url=vscode://ms-vscode-remote.remote-containers/cloneInVolume?url=https://github.com/microsoft/Data-Agent-Governance-and-Security-Accelerator) |
 | --- | --- |
 
-> **Important:** Check Azure resource availability. To ensure the required services and permissions are available in your subscription and region, review the [Prerequisites and costs](#prerequisites-and-costs) section before deploying.
+### Before you deploy
+
+Make sure you have:
+
+- Azure CLI 2.58.0+
+- Azure Developer CLI (azd) 1.9.0+
+- PowerShell 7.x with Az modules
+- Access to the target Azure subscription and Purview account
+- Microsoft 365 compliance permissions if you plan to run `m365`
+
+Review [Cost Guidance](./docs/CostGuidance.md) before deployment if you need to estimate Defender, Log Analytics, Purview, or Foundry-related spend.
 
 ### How to install or deploy
 
-**1. Sign in to Azure:**
+**1. Sign in to Azure**
 ```powershell
 az login
 azd auth login
@@ -108,10 +95,11 @@ Connect-AzAccount -Tenant <tenantId> -Subscription <subscriptionId>
 Set-AzContext -Subscription <subscriptionId>
 ```
 
-**2. Prepare the spec file:**
-`azd up` now runs a preprovision hook that creates `spec.local.json` if it doesn't exist, with the minimum required fields populated from your azd/az CLI context (tenant, subscription, resource group, location) and empty placeholders for optional sections.
+**2. Prepare the spec file**
 
-For a complete reference example, see [docs/spec-example.json](docs/spec-example.json). It contains synthetic values and shows where each setting goes.
+`azd up` runs a preprovision hook that creates `spec.local.json` if it does not exist. The scaffold includes the minimum run parameters from your current azd and Azure CLI context and leaves optional sections empty so they can be filled in only when needed.
+
+For a complete reference example, see [docs/spec-example.json](./docs/spec-example.json).
 
 If you prefer to scaffold manually:
 ```powershell
@@ -121,22 +109,26 @@ Copy-Item ./spec.dspm.template.json ./spec.local.json
 # Bash command
 cp ./spec.dspm.template.json ./spec.local.json
 ```
-Edit `spec.local.json` with your tenant ID, subscription ID, Purview account details, Microsoft Foundry project information, and Fabric workspace/lakehouse sensitivity label settings. For optional sections, copy blocks from [docs/spec-example.json](docs/spec-example.json).
 
-**3. Deploy:**
+Then update `spec.local.json` with the values required for your scenario:
+
+- tenant ID
+- subscription ID
+- resource group and location
+- Purview account details
+- Microsoft Foundry resource IDs if governing Foundry resources
+- Fabric workspace or lakehouse label settings if using Fabric workflows
+
+Use [docs/spec-local-reference.md](./docs/spec-local-reference.md) for field-by-field guidance.
+
+**3. Deploy**
 ```powershell
 azd up
 ```
 
-**4. Complete manual steps** (see below)
+**4. Complete manual steps**
 
-> **Need alternative deployment options?** See [Alternative Deployment Paths](./docs/AlternativeDeploymentPaths.md) for run.ps1 tags, M365 desktop deployment, CI/CD integration, and GitHub Actions workflows.
-
-> **Something go wrong?** See [Undo and Rollback](./docs/AlternativeDeploymentPaths.md#undo-and-rollback) for cleanup steps, partial deployment recovery, and `azd down` guidance.
-
-### Post-deployment manual steps
-
-After automation completes, you **MUST** manually enable several settings that cannot be automated via API:
+After automation completes, you must still enable several settings that are not fully automatable today.
 
 | Portal | Toggle | Navigation | Purpose |
 |--------|--------|------------|---------|
@@ -145,81 +137,64 @@ After automation completes, you **MUST** manually enable several settings that c
 | **Microsoft Purview** | Activate Microsoft Purview Audit | Purview portal → DSPM for AI → Overview → Get Started | Required for audit log ingestion |
 | **Microsoft Purview** | Secure interactions from enterprise apps | Purview portal → DSPM for AI → Recommendations | KYD collection policy for enterprise AI apps |
 
-**Why this matters:** Without these manual toggles, AI interaction data (prompts/responses) will NOT be captured by Purview DSPM or Defender for AI for threat detection and compliance analysis.
+### Validate success
 
-### Prerequisites and costs
+After the first run, confirm that:
 
-To deploy this solution accelerator, ensure you have access to an [Azure subscription](https://azure.microsoft.com/free/) with the necessary permissions to create resource groups, resources, and assign roles.
+- `spec.local.json` reflects your intended environment
+- Purview and Defender settings were applied for the selected path
+- diagnostics are flowing to the intended Log Analytics workspace
+- expected audit or compliance export artifacts were generated
 
-**Microsoft Purview Pre-requisite permissions checklist:**
-- Ensure your existing Purview account is assigned with below two roles as a Managed Identity on Subscription level:
-    - Storage Blob Data Reader role
-    - Reader role
-- Purview Data Security and Posture Management (DSPM) for AI access
-- Purview - Data Security AI Content Viewer role
+Use [docs/TroubleshootingGuide.md](./docs/TroubleshootingGuide.md) for portal checks and troubleshooting steps.
 
-**Required permissions on M365 level:**
-- Contributor role at the subscription level
-- Role Based Access Control Administrator on the subscription and/or resource group level
-- Microsoft 365 E5 (or E5 Compliance) license for the operator enabling Secure Interactions
-- Compliance Administrator role
-- Exchange online Administrator role
+> **Need alternative deployment options?** See [Alternative Deployment Paths](./docs/AlternativeDeploymentPaths.md) for run.ps1 tags, M365 desktop deployment, CI/CD integration, and GitHub Actions workflows.
 
-**Required tooling:**
-- Azure CLI 2.58.0+
-- Azure Developer CLI (azd) 1.9.0+
-- PowerShell 7.x with Az modules
-
-| Service | Purpose | Pricing |
-| ------- | ------- | ------- |
-| [Microsoft Purview](https://azure.microsoft.com/pricing/details/purview/) | DSPM for AI scans, Secure Interactions, Know Your Data | [Usage based](https://azure.microsoft.com/pricing/details/purview/) |
-| [Microsoft Foundry / Cognitive Services](https://azure.microsoft.com/pricing/details/ai-studio/) | AI project hosting, diagnostics, Content Safety | [Usage based](https://azure.microsoft.com/pricing/details/ai-studio/) |
-| [Microsoft Defender for Cloud](https://azure.microsoft.com/pricing/details/defender-for-cloud/) | Defender for AI plans, alerts, diagnostics | [Per resource type](https://azure.microsoft.com/pricing/details/defender-for-cloud/) |
-| [Log Analytics](https://azure.microsoft.com/pricing/details/monitor/) | Central log collection for diagnostics | [Pay-as-you-go](https://azure.microsoft.com/pricing/details/monitor/) |
-
-Use the [Azure pricing calculator](https://azure.microsoft.com/pricing/calculator) to estimate costs. See [Cost Guidance](./docs/CostGuidance.md) for optimization tips.
-
-> **Important:** To avoid unnecessary costs, remember to take down your deployment if it's no longer in use by running `azd down` or deleting the resource group in the Portal.
+> **Something go wrong?** See [Undo and Rollback](./docs/AlternativeDeploymentPaths.md#undo-and-rollback) for cleanup steps, partial deployment recovery, and `azd down` guidance.
 
 ---
 
 ## Guidance
 
-## <img src="./docs/images/readme/business-scenario.png" width="48" alt="Business Scenario" /> Business scenario
+## <img src="./docs/images/readme/business-scenario.png" width="48" alt="Business Scenario" /> Why this accelerator exists
 
-![DSPM for all services](./docs/doc-images/DSPM-for-all-services-steps.png)
+Organizations deploying AI across Microsoft 365 Copilot, Microsoft Foundry, Fabric, and custom agents need a repeatable way to discover sensitive data exposure, apply governance controls, monitor interactions, and export evidence.
 
-A data protection program is tasked with lighting up Microsoft Purview Data Security Posture Management for AI and Microsoft Defender for AI across Microsoft 365 Copilot, Microsoft Foundry, Fabric, and bespoke agentic solutions.
+Without automation, this work is spread across multiple portals and repeated for each project. This accelerator captures those requirements in a single spec file and runs a repeatable governance flow across the supported services.
 
-They must:
-- Discover and classify the source data that feeds every agent
-- Apply Purview labels, DLP, and retention policies plus Defender guardrails
-- Continuously track and audit Generative AI apps and agents for regulators
+### What you get
 
-With this accelerator, the team captures those requirements in a spec file, executes `azd up`, and produces verifiable evidence that DSPM for AI and Defender for AI are enforcing policies, logging activity, and keeping every AI workflow compliant.
+<details open>
+<summary>Click to view the core capabilities provided by this accelerator</summary>
 
-### Business value
-
-<details>
-<summary>Click to expand the value delivered by this solution</summary>
-
-| Value | Description |
-| ----- | ----------- |
-| **Unified AI governance** | Enforce Purview DSPM for AI, labels, DLP, retention, audit, and Azure Policy from one declarative spec. |
-| **Operational efficiency** | Shorten deployment time from days to minutes via azd hooks and repeatable PowerShell plans. |
-| **Evidence on demand** | Export audit logs and compliance inventory snapshots to satisfy regulators or internal risk teams. |
-| **Secure innovation** | Light up Defender for AI, diagnostics, and Content Safety controls around every Foundry project so new AI agents inherit enterprise guardrails. |
+| Capability | Description |
+| ---------- | ----------- |
+| **Spec-driven DSPM for AI enablement** | Use `spec.local.json` to drive Purview onboarding, scans, policies, tagging, and evidence export. |
+| **Cross-cloud posture telemetry** | Stream diagnostics to Log Analytics and connect Defender for AI telemetry with governance workflows. |
+| **CI + desktop friendly automation** | Run `azd up` for the standard path or `run.ps1` for narrower or replayable execution. |
+| **Extensible evidence exports** | Reuse audit export, compliance inventory, and tagging flows for downstream regulator or SIEM scenarios. |
 
 </details>
+
+### Solution architecture
+
+![Data Agent governance architecture](./docs/doc-images/architectureDAGSA.png)
 
 ### DSPM for AI and Defender for AI - Features mapping
 
 | Environment Component | Secured Asset | Product | Key Features |
 | --------------------- | ------------- | ------- | ------------ |
-| **Microsoft Foundry** | AI interactions (prompts & responses), workspaces, connections | Microsoft Purview **DSPM for AI** | Discovery of AI interactions; sensitivity classification & labeling; DLP on prompts/responses; audit & eDiscovery |
+| **Microsoft Foundry** | AI interactions (prompts & responses), workspaces, connections | Microsoft Purview **DSPM for AI** | Discovery of AI interactions; sensitivity classification and labeling; DLP on prompts and responses; audit and eDiscovery |
 | **Azure OpenAI / Azure ML** | Model endpoints, prompt flow apps, deployments | **Defender for AI** | AI-specific threat detection and posture hardening; misconfiguration findings; attack-path analysis |
-| **Microsoft Fabric OneLake** | Tables/files (Delta/Parquet), Lakehouse/Warehouse data | Microsoft Purview + **DSPM for AI** | Sensitivity labels; DLP for structured data; label coverage reports; activity monitoring |
-| **Cross-estate AI** | Prompt/response interaction data across Copilot, agents, AI apps | Microsoft Purview **DSPM for AI** | Unified view of AI interactions; policy enforcement; natural-language risk exploration |
+| **Microsoft Fabric OneLake** | Tables/files, Lakehouse and Warehouse data | Microsoft Purview + **DSPM for AI** | Sensitivity labels; DLP for structured data; label coverage reports; activity monitoring |
+| **Cross-estate AI** | Prompt and response interaction data across Copilot, agents, and AI apps | Microsoft Purview **DSPM for AI** | Unified view of AI interactions; policy enforcement; natural-language risk exploration |
+
+### How to customize
+
+- [Author and extend the spec contract](./spec.dspm.template.json) for each tenant or subscription
+- [Review the value proposition](./docs/WhyDSPM.md) to communicate benefits to stakeholders
+- [Understand cost implications](./docs/CostGuidance.md) before enabling paid features
+- Extend stub scripts such as `15-Create-SensitiveInfoType-Stub.ps1` with organization-specific controls
 
 ---
 
@@ -229,13 +204,13 @@ With this accelerator, the team captures those requirements in a spec file, exec
 
 | Document | Description |
 | -------- | ----------- |
-| [Architecture Overview](./docs/ArchitectureOverview.md) | Technical architecture and class diagram |
 | [Deployment Guide](./docs/DeploymentGuide.md) | Comprehensive step-by-step deployment instructions |
 | [Alternative Deployment Paths](./docs/AlternativeDeploymentPaths.md) | CI/CD integration, run.ps1 tags, M365 desktop deployment, GitHub Actions |
-| [Troubleshooting Guide](./docs/TroubleshootingGuide.md) | Common issues and solutions |
+| [Spec File Reference](./docs/spec-local-reference.md) | Field-by-field documentation for `spec.local.json` |
+| [Troubleshooting Guide](./docs/TroubleshootingGuide.md) | Common issues and validation steps |
+| [Architecture Overview](./docs/ArchitectureOverview.md) | Technical architecture and class diagram |
 | [Why DSPM for AI?](./docs/WhyDSPM.md) | Value proposition and stakeholder communication |
 | [Cost Guidance](./docs/CostGuidance.md) | Billing models and optimization tips |
-| [Spec File Reference](./docs/spec-local-reference.md) | Field-by-field documentation for spec.local.json |
 | [Script Reference](./scripts/governance/README.md) | Repository script structure and governance module descriptions |
 
 ### Security guidelines
@@ -244,8 +219,6 @@ With this accelerator, the team captures those requirements in a spec file, exec
 - Use managed identities or service principals for automation runs; rotate credentials regularly
 - Enable Microsoft Defender for Cloud across Cognitive Services, Storage, and Container workloads
 - Ensure GitHub secret scanning is enabled if you fork this repo; avoid committing `spec.local.json`
-
-
 
 ---
 
