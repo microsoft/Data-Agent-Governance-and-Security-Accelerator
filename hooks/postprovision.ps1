@@ -184,19 +184,31 @@ $connectM365 = $ConnectM365.IsPresent
 if (-not $connectM365 -and $env:DAGA_POSTPROVISION_CONNECT_M365) {
   [bool]::TryParse($env:DAGA_POSTPROVISION_CONNECT_M365, [ref]$connectM365) | Out-Null
 }
+if (-not $connectM365 -and $env:dagaConnectM365) {
+  [bool]::TryParse($env:dagaConnectM365, [ref]$connectM365) | Out-Null
+}
 if (-not $connectM365) {
   $paramConnect = Get-ParamBool 'dagaConnectM365'
   if ($null -ne $paramConnect) { $connectM365 = $paramConnect }
 }
-$m365Upn = Get-Default -value $M365UserPrincipalName -fallback (Get-Default -value $env:DAGA_POSTPROVISION_M365_UPN -fallback (Get-ParamString 'dagaM365UserPrincipalName'))
-$m365AppId = Get-Default -value $env:DAGA_POSTPROVISION_M365_APP_ID -fallback (Get-ParamString 'dagaM365AppId')
-$m365Organization = Get-Default -value $env:DAGA_POSTPROVISION_M365_ORGANIZATION -fallback (Get-ParamString 'dagaM365Organization')
-$m365CertThumb = Get-Default -value $env:DAGA_POSTPROVISION_M365_CERT_THUMBPRINT -fallback (Get-ParamString 'dagaM365CertificateThumbprint')
-$m365CertPath = Get-Default -value $env:DAGA_POSTPROVISION_M365_CERT_PATH -fallback (Get-ParamString 'dagaM365CertificatePath')
-$m365CertPassword = Get-Default -value $env:DAGA_POSTPROVISION_M365_CERT_PASSWORD -fallback (Get-ParamString 'dagaM365CertificatePassword')
+$m365Upn = Get-Default -value $M365UserPrincipalName -fallback (Get-Default -value $env:DAGA_POSTPROVISION_M365_UPN -fallback (Get-Default -value $env:dagaM365UserPrincipalName -fallback (Get-ParamString 'dagaM365UserPrincipalName')))
+$m365AppId = Get-Default -value $env:DAGA_POSTPROVISION_M365_APP_ID -fallback (Get-Default -value $env:dagaM365AppId -fallback (Get-ParamString 'dagaM365AppId'))
+$m365Organization = Get-Default -value $env:DAGA_POSTPROVISION_M365_ORGANIZATION -fallback (Get-Default -value $env:dagaM365Organization -fallback (Get-ParamString 'dagaM365Organization'))
+$m365CertThumb = Get-Default -value $env:DAGA_POSTPROVISION_M365_CERT_THUMBPRINT -fallback (Get-Default -value $env:dagaM365CertificateThumbprint -fallback (Get-ParamString 'dagaM365CertificateThumbprint'))
+$m365CertPath = Get-Default -value $env:DAGA_POSTPROVISION_M365_CERT_PATH -fallback (Get-Default -value $env:dagaM365CertificatePath -fallback (Get-ParamString 'dagaM365CertificatePath'))
+$m365CertPassword = Get-Default -value $env:DAGA_POSTPROVISION_M365_CERT_PASSWORD -fallback (Get-Default -value $env:dagaM365CertificatePassword -fallback (Get-ParamString 'dagaM365CertificatePassword'))
 
 # Import the azd CLI context so downstream scripts find an authenticated Az session.
 Import-AzdLoginContext -SubscriptionId $env:AZURE_SUBSCRIPTION_ID
+
+# Auto-detect M365 UPN from the logged-in Azure CLI user if not explicitly provided.
+if ($connectM365 -and [string]::IsNullOrWhiteSpace($m365Upn)) {
+  $cliAccount = az account show --output json 2>$null | ConvertFrom-Json
+  if ($cliAccount -and $cliAccount.user -and $cliAccount.user.type -eq 'user') {
+    $m365Upn = $cliAccount.user.name
+    Write-Host "Auto-detected M365 UPN from Azure CLI login: $m365Upn" -ForegroundColor Cyan
+  }
+}
 
 $runScript = Join-Path $repoRoot "run.ps1"
 if (-not (Test-Path $runScript)) {

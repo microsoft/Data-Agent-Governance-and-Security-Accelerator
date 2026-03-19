@@ -94,7 +94,35 @@ If your issue is not listed here, open a new issue in the repository with the fa
   - Verify `purviewAccount`, `purviewResourceGroup`, and `purviewSubscriptionId` in spec match exactly (case-sensitive)
   - Confirm the Purview account exists: Azure Portal → Microsoft Purview accounts
   - Ensure you have at least Reader access to the Purview resource
+## 11. Fabric sensitivity labels require M365 connectivity
+- **Symptoms:** `azd up` fails with *"Step '…26-Ensure-FabricWorkspaceSensitivity.ps1' requires Microsoft 365 connectivity. Re-run with -ConnectM365 plus either -M365UserPrincipalName or app-only parameters."*
+- **Fix:**
+  - Ensure `dagaConnectM365 = true` in `infra/main.bicepparam` (this is the default). The post-provision hook automatically detects the M365 UPN from the Azure CLI login context (`az account show`), so you do **not** need to hardcode `dagaM365UserPrincipalName`. Just run `az login` and `azd auth login` before `azd up`.
+  - If auto-detection does not work (e.g., service principal login), provide the UPN explicitly via one of these methods:
+    - Set `dagaM365UserPrincipalName` in `infra/main.bicepparam`
+    - Set the environment variable `DAGA_POSTPROVISION_M365_UPN`
+    - Run directly: `pwsh ./run.ps1 -Tags foundation,dspm,defender,foundry -SpecPath ./spec.local.json -ConnectM365 -M365UserPrincipalName <upn>`
 
+## 12. Fabric sensitivity label name not found
+- **Symptoms:** `26-Ensure-FabricWorkspaceSensitivity.ps1` logs *"WARNING: Missing Fabric sensitivity labels"* with label names that could not be resolved.
+- **Fix:**
+  1. Open the [Microsoft Purview compliance portal](https://compliance.microsoft.com) → **Information protection** → **Labels**.
+  2. Note the **exact display name** of the desired label (e.g., `General` not `General usage`). Parent/child labels use backslash format: `Confidential\All Employees`.
+  3. Update `sensitivityLabel` values in `spec.local.json` to match the exact display name, then rerun.
+
+## 13. 403 Forbidden when applying Fabric sensitivity labels
+- **Symptoms:** `26-Apply-FabricLakehouseSensitivity.ps1` logs *"Failed to apply label to lakehouse … 403 (Forbidden)"*.
+- **Fix:**
+  - Ensure the operator account has **Contributor** or **Member** access on the Fabric workspace.
+  - Verify the account has an **Information Protection P1 or P2** license (required to set sensitivity labels via API).
+  - In the Purview compliance portal, confirm the label's publish policy includes the operator account or a group it belongs to.
+
+## 14. Fabric datasource registration 409 conflict
+- **Symptoms:** `27-Register-FabricWorkspace.ps1` logs *"409 (Conflict)"* errors and falls back to a shared PowerBI datasource.
+- **Fix:** This is expected when a workspace-scoped datasource already exists or conflicts with tenant-level registrations.
+  1. The script falls back to a shared datasource automatically. No immediate action is required.
+  2. After deployment, open the Purview portal, navigate to the shared datasource, and create a **workspace-scoped scan definition** manually to avoid unscoped tenant-wide scans.
+  3. Set `fabric.scanAutomationMode` to `runOnly` in `spec.local.json` so subsequent runs trigger the scan without overwriting it.
 ---
 
 ## How to Verify Successful Configuration

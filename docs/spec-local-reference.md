@@ -234,7 +234,7 @@ This example mirrors the most recently tested spec file content but uses **synth
 
 > **Execution order:** Label validation runs first, then label apply, then workspace registration, then workspace scan trigger. This preserves a workspace-only Purview map and avoids tenant-wide OneLake scanning.
 
-> **Label format tip:** In JSON, represent parent/child labels with escaped backslashes (for example `"Confidential\\All Employees"`).
+> **Label format tip:** In JSON, represent parent/child labels with escaped backslashes (for example `"Confidential\\All Employees"`).\n\n> **Label name matching:** The `sensitivityLabel` value must match the **exact display name** shown in the Microsoft Purview compliance portal under Information protection → Labels (e.g., `General` not `General usage`). Run `Get-Label | Select-Object DisplayName` in a connected Exchange Online session to list available names. Unresolved labels are flagged at runtime and skipped during the apply step.
 
 ## Global Content Safety configuration
 

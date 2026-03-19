@@ -289,6 +289,15 @@ azd up
 - The hook imports your Azure CLI tokens, sets strict mode, and runs `run.ps1` with the tags defined earlier.
 - Expect interactive prompts only if the Microsoft 365 steps need Exchange Online authentication.
 
+> **Important — Fabric sensitivity labels require M365 connectivity:**
+> If your `spec.local.json` includes `fabric.workspaces[].lakehouses[].sensitivityLabel` entries, the post-provision hook **must** connect to Exchange Online to resolve and apply labels. Set `dagaConnectM365 = true` and `dagaM365UserPrincipalName` in `infra/main.bicepparam` (see Step 4), or run directly with:
+>
+> ```powershell
+> pwsh ./run.ps1 -Tags foundation,dspm,defender,foundry -SpecPath ./spec.local.json -ConnectM365 -M365UserPrincipalName <upn>
+> ```
+>
+> Without these flags, the hook will fail with: *"Step '…26-Ensure-FabricWorkspaceSensitivity.ps1' requires Microsoft 365 connectivity."*
+
 If you are running outside of azd, you can execute the same automation directly:
 
 ```powershell
@@ -307,6 +316,9 @@ Run `./run.ps1 -Tags m365 -ConnectM365 -M365UserPrincipalName <upn>` from a work
 4. **Retrigger scans** – Run `azd hooks run postprovision` (or `./scripts/governance/dspmPurview/29-Trigger-FabricWorkspaceScan.ps1 -SpecPath ./spec.local.json`) to trigger both scans using the configured definitions.
 5. **Evidence collection** – rerun `./scripts/governance/dspmPurview/17-Export-ComplianceInventory.ps1` when you are ready to archive posture evidence.
 6. **Cost management** – review [Cost Guidance](./CostGuidance.md) and set budget alerts or run `azd down` when the environment is no longer required.
+7. **Fix unresolved Fabric sensitivity labels** – If the run logged *"Missing Fabric sensitivity labels"*, open the [Microsoft Purview compliance portal](https://compliance.microsoft.com) → **Information protection** → **Labels** and note the exact display names. Update `sensitivityLabel` values in `spec.local.json` to match, then rerun.
+8. **Grant Fabric label-write permissions** – If label application failed with *403 Forbidden*, ensure the operator account (or Purview managed identity) has **Contributor** or **Member** access on the Fabric workspace and that the account is authorized to set sensitivity labels (requires an Information Protection P1 or P2 license).
+9. **Create scoped Fabric scan in Purview portal** – If the run logged *"Skipping automatic creation to avoid unscoped tenant-wide scans"*, the Fabric datasource fell back to a shared PowerBI datasource. Open the Purview portal, navigate to the shared datasource, and manually create a workspace-scoped scan definition. Then set `fabric.scanAutomationMode` to `runOnly` and rerun to trigger it.
 
 ---
 
