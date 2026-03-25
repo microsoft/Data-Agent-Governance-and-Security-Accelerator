@@ -1,0 +1,167 @@
+{
+  "tenantId": "11111111-2222-3333-4444-555555555555",
+  "subscriptionId": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+  "resourceGroup": "Governance",
+  "location": "eastus2",
+  "purviewAccount": "contosoPurview",
+  "purviewResourceGroup": "Governance",
+  "purviewSubscriptionId": "bbbbbbbb-cccc-dddd-eeee-ffffffffffff",
+  "aiResourceGroup": "rg-ai-sample",
+  "aiSubscriptionId": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+  "aiFoundry": {
+    "name": "project-sample-a",
+    "resourceId": "/subscriptions/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/resourceGroups/rg-ai-sample/providers/Microsoft.CognitiveServices/accounts/ai-sample-a/projects/project-sample-a"
+  },
+  "foundry": {
+    "resources": [
+      {
+        "name": "project-sample-a",
+        "resourceId": "/subscriptions/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/resourceGroups/rg-ai-sample/providers/Microsoft.CognitiveServices/accounts/ai-sample-a",
+        "diagnostics": true,
+        "tags": {
+          "Environment": "Dev",
+          "Owner": "DataGov",
+          "CostCenter": "sample-a"
+        }
+      },
+      {
+        "name": "project-sample-b",
+        "resourceId": "/subscriptions/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/resourceGroups/rg-ai-sample-b/providers/Microsoft.CognitiveServices/accounts/ai-sample-b/projects/project-sample-b",
+        "diagnostics": true,
+        "tags": {
+          "Environment": "Dev",
+          "Owner": "DataGov",
+          "CostCenter": "sample-b"
+        }
+      }
+    ],
+    "contentSafety": {
+      "endpoint": "",
+      "apiKeySecretRef": {
+        "keyVaultResourceId": "",
+        "secretName": ""
+      },
+      "textBlocklists": [],
+      "harmSeverityThreshold": null
+    }
+  },
+  "fabric": {
+    "scanAutomationMode": "runOnly",
+    "workspaces": [
+      {
+        "name": "workspace-sample-a",
+        "workspaceId": "",
+        "workspaceUrl": "https://app.powerbi.com/groups/11111111-aaaa-bbbb-cccc-222222222222",
+        "scanName": "scan-[name]",
+        "lakehouses": [
+          {
+            "name": "bronze",
+            "sensitivityLabel": "Personal"
+          },
+          {
+            "name": "silver",
+            "sensitivityLabel": "Confidential\\All Employees"
+          }
+        ]
+      },
+      {
+        "name": "workspace-sample-b",
+        "workspaceId": "33333333-4444-5555-6666-777777777777",
+        "workspaceUrl": "https://app.powerbi.com/groups/33333333-4444-5555-6666-777777777777",
+        "scanName": "scan-[name]",
+        "lakehouses": [
+          {
+            "name": "bronze",
+            "sensitivityLabel": "Public"
+          },
+          {
+            "name": "silver",
+            "sensitivityLabel": "General\\All Employees (unrestricted)"
+          },
+          {
+            "name": "gold",
+            "sensitivityLabel": "Public"
+          }
+        ]
+      },
+      {
+        "name": "workspace-sample-c",
+        "workspaceId": "88888888-9999-aaaa-bbbb-cccccccccccc",
+        "workspaceUrl": "https://app.powerbi.com/groups/88888888-9999-aaaa-bbbb-cccccccccccc",
+        "scanName": "scan-[name]",
+        "lakehouses": [
+          {
+            "name": "bronze",
+            "sensitivityLabel": "Public"
+          },
+          {
+            "name": "silver",
+            "sensitivityLabel": "General\\All Employees (unrestricted)"
+          },
+          {
+            "name": "gold",
+            "sensitivityLabel": "Public"
+          }
+        ]
+      }
+    ]
+  },
+  "logAnalyticsWorkspaceId": "99999999-aaaa-bbbb-cccc-dddddddddddd",
+  "dataSources": [],
+  "scans": [],
+  "dlpPolicy": {
+    "name": "AI Egress Control",
+    "mode": "Enforce",
+    "locations": {
+      "Exchange": "All",
+      "SharePoint": "All",
+      "OneDrive": "All"
+    },
+    "rules": [
+      {
+        "name": "Block Sensitive Data to AI Destinations",
+        "sensitiveInfoTypes": [
+          {
+            "name": "Credit Card Number",
+            "count": 1,
+            "confidence": 85
+          },
+          {
+            "name": "U.S. Social Security Number (SSN)",
+            "count": 1,
+            "confidence": 85
+          }
+        ],
+        "blockAccess": true,
+        "notifyUser": true
+      }
+    ]
+  },
+  "labels": [
+    {
+      "name": "ExampleSemiConfidential",
+      "publishPolicyName": "Publish: Confidential",
+      "encryptionEnabled": false,
+      "publishScopes": {
+        "Exchange": "All",
+        "SharePoint": "All",
+        "OneDrive": "All"
+      }
+    }
+  ],
+  "retentionPolicies": [],
+  "activityExport": null,
+  "defenderForAI": {
+    "enableDefenderForCloudPlans": [
+      "CognitiveServices",
+      "Storage",
+      "Containers"
+    ],
+    "logAnalyticsWorkspaceId": "99999999-aaaa-bbbb-cccc-dddddddddddd",
+    "diagnosticCategories": [
+      "Audit",
+      "RequestResponse",
+      "AllMetrics"
+    ]
+  }
+}
