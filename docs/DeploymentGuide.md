@@ -303,10 +303,11 @@ Run `./run.ps1 -Tags m365 -ConnectM365 -M365UserPrincipalName <upn>` from a work
 
 1. **Purview portal toggles** – enable *Secure interactions for enterprise AI apps* in the Purview portal (Data Security Posture Management for AI > Recommendations).
 2. **Role assignments** – ensure the operator account has the Audit Reader (or Compliance Administrator) role before running the audit export scripts.
-3. **Set scan automation mode** – Keep `fabric.scanAutomationMode` set to `runOnly` in `spec.local.json` so automation retriggers these scans without overwriting portal-scoped definitions.
-4. **Retrigger scans** – Run `azd hooks run postprovision` (or `./scripts/governance/dspmPurview/29-Trigger-FabricWorkspaceScan.ps1 -SpecPath ./spec.local.json`) to trigger both scans using the configured definitions.
-5. **Evidence collection** – rerun `./scripts/governance/dspmPurview/17-Export-ComplianceInventory.ps1` when you are ready to archive posture evidence.
-6. **Cost management** – review [Cost Guidance](./CostGuidance.md) and set budget alerts or run `azd down` when the environment is no longer required.
+3. **Fabric labeling prerequisites** – Confirm Fabric sensitivity labels are already available in the tenant, the referenced Purview labels already exist, and the operator can authenticate both to Exchange Online / Security & Compliance and to Fabric admin APIs. The accelerator applies labels; it does not enable the Fabric tenant feature for you.
+4. **Set scan automation mode** – Keep `fabric.scanAutomationMode` set to `runOnly` in `spec.local.json` when the Fabric scan definitions are already managed in the Purview portal and you only want automation to retrigger them. Use `full` if automation should create or update the scan definition before running it. Use `disabled` if you want to skip scan triggering altogether.
+5. **Retrigger scans** – Run `azd hooks run postprovision` (or `./scripts/governance/dspmPurview/29-Trigger-FabricWorkspaceScan.ps1 -SpecPath ./spec.local.json`) to trigger both scans using the configured definitions. If `runOnly` is set, the named scan must already exist.
+6. **Evidence collection** – rerun `./scripts/governance/dspmPurview/17-Export-ComplianceInventory.ps1` when you are ready to archive posture evidence.
+7. **Cost management** – review [Cost Guidance](./CostGuidance.md) and set budget alerts or run `azd down` when the environment is no longer required.
 
 ---
 

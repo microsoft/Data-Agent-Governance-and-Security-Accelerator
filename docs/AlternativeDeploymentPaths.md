@@ -194,7 +194,21 @@ Edit `infra/main.bicepparam` to control:
 - `dagaSpecPath` - spec file path
 - `dagaTags` - tags to run after provisioning
 - `dagaConnectM365` - enable M365 steps
-- `dagaM365UserPrincipalName` - UPN for M365 auth
+- `dagaM365UserPrincipalName` - UPN for interactive M365 auth when an operator can complete MFA
+- `dagaM365AppId` - app registration client ID for app-only M365 auth
+- `dagaM365Organization` - Microsoft 365 organization or tenant domain, such as `contoso.onmicrosoft.com`
+- `dagaM365CertificateThumbprint` - certificate thumbprint for app-only auth using a certificate installed on the machine
+- `dagaM365CertificatePath` - path to a `.pfx` certificate file for app-only auth
+- `dagaM365CertificatePassword` - password for the `.pfx` certificate file
+
+These M365 parameters are not used for Azure deployment itself. They are only used when the `m365` workflow needs to authenticate to Exchange Online and Security & Compliance cmdlets.
+
+Use the parameters in one of these two ways:
+
+- Interactive auth: `dagaM365UserPrincipalName`
+- App-only auth: `dagaM365AppId` + `dagaM365Organization` plus either `dagaM365CertificateThumbprint` or `dagaM365CertificatePath` + `dagaM365CertificatePassword`
+
+App-only auth is mainly useful for unattended runs, GitHub Actions, or other CI/CD scenarios where browser-based sign-in is not practical.
 
 ---
 

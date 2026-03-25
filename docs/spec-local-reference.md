@@ -221,7 +221,7 @@ This example mirrors the most recently tested spec file content but uses **synth
 
 | Path | Type | Description | Consumed by |
 | ---- | ---- | ----------- | ----------- |
-| `fabric.scanAutomationMode` | string | Controls scan-definition automation behavior for Fabric workspaces. Supported values: `full` (create/update + run), `runOnly` (never update definitions; only trigger existing scans), `disabled` (skip Fabric scan trigger step). Use `runOnly` when scoped scans are managed in Purview portal due to API limitations. | `29-Trigger-FabricWorkspaceScan.ps1` |
+| `fabric.scanAutomationMode` | string | Controls scan-definition automation behavior for Fabric workspaces. Supported values: `full` (create or update the scan definition, then run it), `runOnly` (preserve the existing Purview scan definition and only trigger it), `disabled` (skip the Fabric scan trigger step entirely). Use `runOnly` when scoped scans are managed in the Purview portal and you do not want automation to overwrite them. If an unknown value is supplied, the scripts warn and fall back to `full`. | `27-Register-FabricWorkspace.ps1`, `29-Trigger-FabricWorkspaceScan.ps1` |
 | `fabric.workspaces[]` | array | Fabric workspaces whose assets (lakehouses, warehouses, etc.) should be crawled. This flow is workspace-scoped and does not register OneLake roots. | `26-Ensure-FabricWorkspaceSensitivity.ps1`, `26-Apply-FabricLakehouseSensitivity.ps1`, `27-Register-FabricWorkspace.ps1`, `29-Trigger-FabricWorkspaceScan.ps1` |
 | `fabric.workspaces[].name` | string | Fabric workspace name. This is sufficient in most cases; the script attempts to resolve workspace GUID by name automatically. | `27-Register-FabricWorkspace.ps1` |
 | `fabric.workspaces[].resourceId` | string | Optional identifier used only as an additional input for workspace GUID resolution. It is not sent directly in the Purview datasource registration payload. This value can be an ARM-style resource ID or a Fabric workspace URL (`https://app.powerbi.com/groups/<workspaceGuid>`). | `27-Register-FabricWorkspace.ps1` |
@@ -235,6 +235,10 @@ This example mirrors the most recently tested spec file content but uses **synth
 > **Execution order:** Label validation runs first, then label apply, then workspace registration, then workspace scan trigger. This preserves a workspace-only Purview map and avoids tenant-wide OneLake scanning.
 
 > **Label format tip:** In JSON, represent parent/child labels with escaped backslashes (for example `"Confidential\\All Employees"`).
+
+> **Fabric label prerequisites:** The accelerator does not turn on Fabric sensitivity-labeling features at the tenant level. It expects your environment to already support Fabric sensitivity labels, the operator to have permission to call the Fabric admin labeling API, and the referenced Purview sensitivity labels to already exist and be discoverable through Exchange Online / Security & Compliance PowerShell (`Get-Label`). If those prerequisites are missing, the validation/apply steps fail or skip; they do not enable the feature for you.
+
+> **`runOnly` prerequisite:** `runOnly` assumes the named Purview Fabric scan already exists. If it does not, create it once in the Purview portal or switch temporarily to `full` so automation can create it.
 
 ## Global Content Safety configuration
 
