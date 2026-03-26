@@ -205,6 +205,7 @@ Without automation, this work is spread across multiple portals and repeated for
 | Document | Description |
 | -------- | ----------- |
 | [Deployment Guide](./docs/DeploymentGuide.md) | Comprehensive step-by-step deployment instructions |
+| [Post-Provisioning Validation](./docs/PostProvisioningValidation.md) | Portal-based checklist to verify Purview, Defender, Fabric, Foundry, and M365 settings after provisioning |
 | [Alternative Deployment Paths](./docs/AlternativeDeploymentPaths.md) | CI/CD integration, run.ps1 tags, M365 desktop deployment, GitHub Actions |
 | [Spec File Reference](./docs/spec-local-reference.md) | Field-by-field documentation for `spec.local.json` |
 | [Troubleshooting Guide](./docs/TroubleshootingGuide.md) | Common issues and validation steps |

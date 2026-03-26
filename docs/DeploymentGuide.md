@@ -309,6 +309,8 @@ Run `./run.ps1 -Tags m365 -ConnectM365 -M365UserPrincipalName <upn>` from a work
 6. **Evidence collection** – rerun `./scripts/governance/dspmPurview/17-Export-ComplianceInventory.ps1` when you are ready to archive posture evidence.
 7. **Cost management** – review [Cost Guidance](./CostGuidance.md) and set budget alerts or run `azd down` when the environment is no longer required.
 
+For a portal-by-portal validation checklist after provisioning, see [Post-Provisioning Validation](./PostProvisioningValidation.md).
+
 ---
 
 ## 8. Next steps
