@@ -6,7 +6,7 @@ This document provides a technical architecture view of the Data Agent Governanc
 
 ## Solution Architecture
 
-The accelerator orchestrates Microsoft Purview DSPM for AI, Defender for AI, and M365 compliance controls across Azure AI Foundry, Fabric, and custom agentic solutions.
+The accelerator orchestrates Microsoft Purview DSPM for AI, Defender for AI, and M365 compliance controls across Microsoft Foundry, Fabric, and custom agentic solutions.
 
 ![Data Agent governance architecture](./doc-images/architectureDAGSA.png)
 
@@ -27,9 +27,9 @@ The accelerator orchestrates Microsoft Purview DSPM for AI, Defender for AI, and
 | Block | Purpose | Example Scripts |
 |-------|---------|-----------------|
 | **PurviewConfig** | Purview account, data sources, scan schedules | `02-Ensure-PurviewAccount.ps1`, `03-Register-DataSource.ps1`, `04-Run-Scan.ps1` |
-| **AiFoundryConfig** | Azure AI Foundry workspace metadata | Used by `30-Foundry-RegisterResources.ps1` |
+| **AiFoundryConfig** | Microsoft Foundry workspace metadata | Used by `30-Foundry-RegisterResources.ps1` |
 | **FoundryConfig** | Foundry projects, Content Safety blocklists | `31-Foundry-ConfigureContentSafety.ps1` |
-| **FabricConfig** | OneLake and Fabric workspace registration | `26-Register-OneLake.ps1`, `27-Register-FabricWorkspace.ps1` (commented out) |
+| **FabricConfig** | Fabric lakehouse label validation/application, workspace registration, and scoped scans | `26-Ensure-FabricWorkspaceSensitivity.ps1`, `26-Apply-FabricLakehouseSensitivity.ps1`, `27-Register-FabricWorkspace.ps1`, `29-Trigger-FabricWorkspaceScan.ps1` |
 | **DlpPolicy** | Data Loss Prevention rules for M365 | `12-Create-DlpPolicy.ps1` |
 | **Label[]** | Sensitivity labels | `13-Create-SensitivityLabel.ps1` |
 | **RetentionPolicy[]** | Retention rules for AI interaction data | `14-Create-RetentionPolicy.ps1` |

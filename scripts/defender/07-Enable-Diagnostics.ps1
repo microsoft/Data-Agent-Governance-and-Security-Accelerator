@@ -2,10 +2,16 @@
 param([Parameter(Mandatory=$true)][string]$SpecPath)
 $ErrorActionPreference='Stop'
 $spec = Get-Content $SpecPath -Raw | ConvertFrom-Json
-$ensureContextPath = Join-Path $PSScriptRoot "..\..\common\Ensure-AzContext.ps1"
+$ensureContextPath = Join-Path $PSScriptRoot "..\common\Ensure-AzContext.ps1"
 . $ensureContextPath
 Import-Module Az.Accounts, Az.Monitor, Az.Resources, Az.OperationalInsights -ErrorAction Stop
 Ensure-AzContext -TenantId $spec.tenantId -SubscriptionId $spec.subscriptionId
+try {
+  Update-AzConfig -DisplayBreakingChangeWarning $false -Scope Process -ErrorAction Stop | Out-Null
+} catch {
+}
+$PSDefaultParameterValues['Get-AzDiagnosticSetting:WarningAction'] = 'SilentlyContinue'
+$PSDefaultParameterValues['Get-AzDiagnosticSettingCategory:WarningAction'] = 'SilentlyContinue'
 $law = $spec.defenderForAI.logAnalyticsWorkspaceId
 if(!$law){ Write-Host "No Log Analytics workspace configured" -ForegroundColor DarkGray; exit 0 }
 $cats = if($spec.defenderForAI.diagnosticCategories){$spec.defenderForAI.diagnosticCategories}else{@("AllLogs","AllMetrics")}

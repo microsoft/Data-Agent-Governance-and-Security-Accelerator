@@ -1,6 +1,6 @@
-name: data-agent-governance-and-security-accelerator
+name: data-and-agent-governance-and-security-accelerator
 metadata:
-  template: data-agent-governance-and-security-accelerator@1.0
+  template: data-and-agent-governance-and-security-accelerator@1.0
   azd-version: 1.9.0
 infra:
   provider: bicep

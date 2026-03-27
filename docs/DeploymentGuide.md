@@ -1,6 +1,6 @@
 # Deployment Guide
 
-Follow this guide to deploy the Data Agent Governance and Security Accelerator (DAGA) into your Azure subscription using the Azure Developer CLI (azd).
+Follow this guide to deploy the Data and Agent Governance and Security Accelerator (DAGSA) into your Azure subscription using the Azure Developer CLI (azd).
 
 ---
 
@@ -29,13 +29,13 @@ Gather this information before configuring your spec file:
 | Resource Group | Azure Portal → Resource groups | `rg-resourcegroup-name` |
 | Purview account name | Azure Portal → Microsoft Purview accounts | `contoso-purview` |
 | Purview resource group | Azure Portal → Microsoft Purview accounts → Overview | `rg-purview-prod` |
-| AI Foundry project name | Azure AI Foundry portal → Settings | `contoso-ai-project` |
+| Microsoft Foundry project name | Microsoft Foundry portal → Settings | `contoso-ai-project` |
 | AI resource group | Azure Portal → Resource groups | `rg-ai-foundry` |
 | Log Analytics workspace ID | Azure Portal → Log Analytics → Properties → Workspace ID | `/subscriptions/.../workspaces/contoso-logs` |
 
 ### Permissions checklist
 
-- [ ] **Azure Contributor** on subscription(s) with Purview, AI Foundry, and Defender resources
+- [ ] **Azure Contributor** on subscription(s) with Purview, Microsoft Foundry, and Defender resources
 - [ ] **Purview Data Source Administrator** for registering data sources
 - [ ] **Purview Data Security and Posture Management (DSPM)** for AI access
 - [ ] **Purview Data Security AI Content Viewer** role for accessing AI prompts
@@ -138,7 +138,7 @@ Open `spec.local.json` and replace placeholders with your actual values:
 }
 ```
 
-### Step 3.3: Configure AI Foundry resources (for `foundry` tag)
+### Step 3.3: Configure Microsoft Foundry resources (for `foundry` tag)
 
 ```json
 {
@@ -303,8 +303,13 @@ Run `./run.ps1 -Tags m365 -ConnectM365 -M365UserPrincipalName <upn>` from a work
 
 1. **Purview portal toggles** – enable *Secure interactions for enterprise AI apps* in the Purview portal (Data Security Posture Management for AI > Recommendations).
 2. **Role assignments** – ensure the operator account has the Audit Reader (or Compliance Administrator) role before running the audit export scripts.
-3. **Evidence collection** – rerun `./scripts/governance/dspmPurview/17-Export-ComplianceInventory.ps1` when you are ready to archive posture evidence.
-4. **Cost management** – review [Cost Guidance](./CostGuidance.md) and set budget alerts or run `azd down` when the environment is no longer required.
+3. **Fabric labeling prerequisites** – Confirm Fabric sensitivity labels are already available in the tenant, the referenced Purview labels already exist, and the operator can authenticate both to Exchange Online / Security & Compliance and to Fabric admin APIs. The accelerator applies labels; it does not enable the Fabric tenant feature for you.
+4. **Set scan automation mode** – Keep `fabric.scanAutomationMode` set to `runOnly` in `spec.local.json` when the Fabric scan definitions are already managed in the Purview portal and you only want automation to retrigger them. Use `full` if automation should create or update the scan definition before running it. Use `disabled` if you want to skip scan triggering altogether.
+5. **Retrigger scans** – Run `azd hooks run postprovision` (or `./scripts/governance/dspmPurview/29-Trigger-FabricWorkspaceScan.ps1 -SpecPath ./spec.local.json`) to trigger both scans using the configured definitions. If `runOnly` is set, the named scan must already exist.
+6. **Evidence collection** – rerun `./scripts/governance/dspmPurview/17-Export-ComplianceInventory.ps1` when you are ready to archive posture evidence.
+7. **Cost management** – review [Cost Guidance](./CostGuidance.md) and set budget alerts or run `azd down` when the environment is no longer required.
+
+For a portal-by-portal validation checklist after provisioning, see [Post-Provisioning Validation](./PostProvisioningValidation.md).
 
 ---
 

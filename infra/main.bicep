@@ -1,5 +1,8 @@
 targetScope = 'subscription'
 
+@description('Deployment location for the no-op bootstrap deployment used to satisfy azd infrastructure validation.')
+param deploymentLocation string = deployment().location
+
 @description('Spec file that the post-provision hook should hand to run.ps1.')
 param dagaSpecPath string = './spec.local.json'
 
@@ -31,6 +34,27 @@ param dagaM365CertificatePath string = ''
 
 @description('Password for the file-based certificate (optional).')
 param dagaM365CertificatePassword string = ''
+
+// azd preflight rejects an ARM template with zero resources. This nested deployment is intentionally
+// inert and exists only so azd can validate and invoke the post-provision hook-driven automation.
+resource bootstrapNoOp 'Microsoft.Resources/deployments@2024-03-01' = {
+	name: 'daga-bootstrap-noop'
+	location: deploymentLocation
+	properties: {
+		mode: 'Incremental'
+		template: {
+			'$schema': 'https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#'
+			contentVersion: '1.0.0.0'
+			outputs: {
+				status: {
+					type: 'string'
+					value: 'noop'
+				}
+			}
+			resources: []
+		}
+	}
+}
 
 output dagaSpecPath string = dagaSpecPath
 output dagaTags array = dagaTags

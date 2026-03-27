@@ -12,10 +12,31 @@ function PvInvoke([string]$m,[string]$p,[object]$b) {
   $j = if($b){$b|ConvertTo-Json -Depth 20}else{$null}
   Invoke-RestMethod -Method $m -Uri $u -Headers $h -Body $j
 }
+function Get-OptionalStringProperty($obj, [string]$name){
+  if(-not $obj){ return $null }
+  $prop = $obj.PSObject.Properties[$name]
+  if($null -eq $prop -or $null -eq $prop.Value){ return $null }
+  return [string]$prop.Value
+}
 foreach($s in $spec.scans){
-  $p = "/scan/datasources/$($s.dataSource)/scans/$($s.name)?api-version=2024-05-01-preview"
+  $dataSourceName = Get-OptionalStringProperty -obj $s -name 'dataSource'
+  if([string]::IsNullOrWhiteSpace($dataSourceName)){
+    $dataSourceName = Get-OptionalStringProperty -obj $s -name 'dataSourceName'
+  }
+
+  $scanName = Get-OptionalStringProperty -obj $s -name 'name'
+  if([string]::IsNullOrWhiteSpace($scanName)){
+    $scanName = Get-OptionalStringProperty -obj $s -name 'scanName'
+  }
+
+  if([string]::IsNullOrWhiteSpace($dataSourceName) -or [string]::IsNullOrWhiteSpace($scanName)){
+    Write-Host "Skipping scan entry with missing data source or scan name." -ForegroundColor Yellow
+    continue
+  }
+
+  $p = "/scan/datasources/$dataSourceName/scans/$scanName?api-version=2024-05-01-preview"
   $b = @{ properties=@{ scanRulesetType=$s.rulesetType; scanRulesetName=$s.rulesetName; incrementalScanStartTime=(Get-Date).ToUniversalTime().ToString('o'); collection=@{ type='CollectionReference'; referenceName=$spec.purviewAccount } } }
   PvInvoke 'PUT' $p $b | Out-Null
-  PvInvoke 'POST' "/scan/datasources/$($s.dataSource)/scans/$($s.name)/run?api-version=2024-05-01-preview" $null | Out-Null
-  Write-Host "Triggered scan $($s.name) on $($s.dataSource)" -ForegroundColor Green
+  PvInvoke 'POST' "/scan/datasources/$dataSourceName/scans/$scanName/run?api-version=2024-05-01-preview" $null | Out-Null
+  Write-Host "Triggered scan $scanName on $dataSourceName" -ForegroundColor Green
 }

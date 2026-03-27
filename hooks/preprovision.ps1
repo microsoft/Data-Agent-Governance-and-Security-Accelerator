@@ -40,49 +40,26 @@ $subscriptionId = Get-Default -value $env:AZURE_SUBSCRIPTION_ID -fallback (Get-D
 $resourceGroup = Get-Default -value $env:AZURE_RESOURCE_GROUP -fallback (Get-Default -value $env:AZURE_RESOURCE_GROUP_NAME -fallback "")
 $location = Get-Default -value $env:AZURE_LOCATION -fallback ""
 
-$spec = [ordered]@{
-  tenantId = $tenantId
-  subscriptionId = $subscriptionId
-  resourceGroup = $resourceGroup
-  location = $location
-  purviewAccount = ""
-  purviewResourceGroup = ""
-  purviewSubscriptionId = ""
-  aiResourceGroup = ""
-  aiSubscriptionId = ""
-  aiFoundry = [ordered]@{
-    name = ""
-    resourceId = ""
-  }
-  foundry = [ordered]@{
-    resources = @()
-    contentSafety = [ordered]@{
-      endpoint = ""
-      apiKeySecretRef = [ordered]@{
-        keyVaultResourceId = ""
-        secretName = ""
-      }
-      textBlocklists = @()
-      harmSeverityThreshold = $null
-    }
-  }
-  dataSources = @()
-  scans = @()
-  activityExport = [ordered]@{
-    outputPath = ""
-    contentTypes = @()
-  }
-  defenderForAI = [ordered]@{
-    enableDefenderForCloudPlans = @()
-    logAnalyticsWorkspaceId = ""
-    diagnosticCategories = @()
-  }
+$templatePath = Join-Path $repoRoot "spec.dspm.template.json"
+if (-not (Test-Path -Path $templatePath)) {
+  throw "Template '$templatePath' not found. Cannot scaffold spec."
 }
+
+$spec = Get-Content $templatePath -Raw | ConvertFrom-Json
+if ($tenantId) { $spec.tenantId = $tenantId }
+if ($subscriptionId) {
+  $spec.subscriptionId = $subscriptionId
+  if ($null -ne ($spec.aiSubscriptionId)) { $spec.aiSubscriptionId = $subscriptionId }
+  if ($null -ne ($spec.purviewSubscriptionId) -and [string]::IsNullOrWhiteSpace([string]$spec.purviewSubscriptionId)) { $spec.purviewSubscriptionId = $subscriptionId }
+}
+if ($resourceGroup) { $spec.resourceGroup = $resourceGroup }
+if ($location) { $spec.location = $location }
+if ($spec.resourceGroup -and $null -ne ($spec.purviewResourceGroup) -and [string]::IsNullOrWhiteSpace([string]$spec.purviewResourceGroup)) { $spec.purviewResourceGroup = $spec.resourceGroup }
 
 $specDir = Split-Path -Parent $specPath
 if (-not (Test-Path -Path $specDir)) {
   New-Item -ItemType Directory -Path $specDir -Force | Out-Null
 }
 
-$spec | ConvertTo-Json -Depth 10 | Out-File -FilePath $specPath -Encoding UTF8 -Force
-Write-Host "Created minimal spec at $specPath" -ForegroundColor Green
+$spec | ConvertTo-Json -Depth 20 | Out-File -FilePath $specPath -Encoding UTF8 -Force
+Write-Host "Created spec from template at $specPath" -ForegroundColor Green
