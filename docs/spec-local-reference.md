@@ -235,6 +235,7 @@ This example mirrors the most recently tested spec file content but uses **synth
 > **Execution order:** Label validation runs first, then label apply, then workspace registration, then workspace scan trigger. This preserves a workspace-only Purview map and avoids tenant-wide OneLake scanning.
 
 > **Label format tip:** In JSON, represent parent/child labels with escaped backslashes (for example `"Confidential\\All Employees"`).
+**Label name matching:** The `sensitivityLabel` value must match the **exact display name** shown in the Microsoft Purview compliance portal under Information protection → Labels (e.g., `General` not `General usage`). Run `Get-Label | Select-Object DisplayName` in a connected Exchange Online session to list available names. Unresolved labels are flagged at runtime and skipped during the apply step.
 
 > **Fabric label prerequisites:** The accelerator does not turn on Fabric sensitivity-labeling features at the tenant level. It expects your environment to already support Fabric sensitivity labels, the operator to have permission to call the Fabric admin labeling API, and the referenced Purview sensitivity labels to already exist and be discoverable through Exchange Online / Security & Compliance PowerShell (`Get-Label`). If those prerequisites are missing, the validation/apply steps fail or skip; they do not enable the feature for you.
 
