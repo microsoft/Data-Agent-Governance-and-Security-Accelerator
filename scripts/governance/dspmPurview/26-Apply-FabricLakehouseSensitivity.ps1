@@ -11,6 +11,29 @@ function Get-OptionalStringProperty($obj, [string]$name){
   return [string]$prop.Value
 }
 
+function Get-FabricLakehouseLabelTargetPath([string]$SpecPath){
+  $legacyPath = Join-Path ([IO.Path]::GetTempPath()) 'fabric_lakehouse_labels.json'
+  if([string]::IsNullOrWhiteSpace($SpecPath)){
+    return $legacyPath
+  }
+
+  try {
+    $resolvedSpecPath = (Resolve-Path -LiteralPath $SpecPath -ErrorAction Stop).Path
+  } catch {
+    $resolvedSpecPath = [IO.Path]::GetFullPath($SpecPath)
+  }
+
+  $sha256 = [System.Security.Cryptography.SHA256]::Create()
+  try {
+    $hashBytes = $sha256.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($resolvedSpecPath))
+  } finally {
+    if($sha256){ $sha256.Dispose() }
+  }
+
+  $specId = ([System.BitConverter]::ToString($hashBytes)).Replace('-', '').ToLowerInvariant()
+  return Join-Path ([IO.Path]::GetTempPath()) ("fabric_lakehouse_labels_{0}.json" -f $specId)
+}
+
 function Get-AccessTokenForResource([string]$resourceUrl){
   try {
     $token = az account get-access-token --resource $resourceUrl --query accessToken -o tsv 2>$null
@@ -102,10 +125,15 @@ if($workspaces.Count -eq 0){
   exit 0
 }
 
-$targetPath = Join-Path ([IO.Path]::GetTempPath()) 'fabric_lakehouse_labels.json'
+$targetPath = Get-FabricLakehouseLabelTargetPath -SpecPath $SpecPath
 if(-not (Test-Path -Path $targetPath)){
-  Write-Host "Validated label target file not found at $targetPath. Run 26-Ensure-FabricWorkspaceSensitivity.ps1 first." -ForegroundColor Yellow
-  exit 0
+  $legacyTargetPath = Join-Path ([IO.Path]::GetTempPath()) 'fabric_lakehouse_labels.json'
+  if(Test-Path -Path $legacyTargetPath){
+    $targetPath = $legacyTargetPath
+  } else {
+    Write-Host "Validated label target file not found at '$targetPath' or legacy path '$legacyTargetPath'. Run 26-Ensure-FabricWorkspaceSensitivity.ps1 first." -ForegroundColor Yellow
+    exit 0
+  }
 }
 
 $targets = @()

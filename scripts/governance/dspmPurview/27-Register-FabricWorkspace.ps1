@@ -29,6 +29,31 @@ function Get-OptionalStringProperty($obj, [string]$name){
   return [string]$prop.Value
 }
 
+function Get-ScopedTempArtifactPath([string]$SpecPath, [string]$FileName){
+  $legacyPath = Join-Path ([IO.Path]::GetTempPath()) $FileName
+  if([string]::IsNullOrWhiteSpace($SpecPath)){
+    return $legacyPath
+  }
+
+  try {
+    $resolvedSpecPath = (Resolve-Path -LiteralPath $SpecPath -ErrorAction Stop).Path
+  } catch {
+    $resolvedSpecPath = [IO.Path]::GetFullPath($SpecPath)
+  }
+
+  $sha256 = [System.Security.Cryptography.SHA256]::Create()
+  try {
+    $hashBytes = $sha256.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($resolvedSpecPath))
+  } finally {
+    if($sha256){ $sha256.Dispose() }
+  }
+
+  $specId = ([System.BitConverter]::ToString($hashBytes)).Replace('-', '').ToLowerInvariant()
+  $baseName = [IO.Path]::GetFileNameWithoutExtension($FileName)
+  $extension = [IO.Path]::GetExtension($FileName)
+  return Join-Path ([IO.Path]::GetTempPath()) ("{0}_{1}{2}" -f $baseName, $specId, $extension)
+}
+
 $scanAutomationMode = 'full'
 if($spec.fabric){
   $configuredMode = Get-OptionalStringProperty -obj $spec.fabric -name 'scanAutomationMode'
@@ -119,7 +144,13 @@ function Get-PurviewPrincipalId {
 }
 
 function Get-CollectionMap {
-  $path = Join-Path ([IO.Path]::GetTempPath()) 'fabric_purview_collections.json'
+  $path = Get-ScopedTempArtifactPath -SpecPath $SpecPath -FileName 'fabric_purview_collections.json'
+  if(-not (Test-Path -Path $path)){
+    $legacyPath = Join-Path ([IO.Path]::GetTempPath()) 'fabric_purview_collections.json'
+    if(Test-Path -Path $legacyPath){
+      $path = $legacyPath
+    }
+  }
   if(-not (Test-Path -Path $path)){ return @() }
   try {
     $raw = Get-Content -Path $path -Raw
@@ -367,9 +398,9 @@ foreach($workspace in $workspaces){
     $datasourceName = "Fabric-Workspace-$workspaceGuid"
   }
 
-  $collectionId = $spec.purviewAccount
+  $collectionId = Resolve-CollectionId -workspaceName $workspaceName -collectionMap $collectionMap
   if([string]::IsNullOrWhiteSpace([string]$collectionId)){
-    $collectionId = Resolve-CollectionId -workspaceName $workspaceName -collectionMap $collectionMap
+    $collectionId = $spec.purviewAccount
   }
   if([string]::IsNullOrWhiteSpace([string]$collectionId)){
     throw "Unable to resolve a Purview collection for Fabric datasource registration. Ensure purviewAccount is configured."
@@ -521,12 +552,12 @@ foreach($workspace in $workspaces){
 }
 
 if($registeredDataSources.Count -gt 0){
-  $outPath = Join-Path ([IO.Path]::GetTempPath()) 'fabric_datasource.env'
+  $outPath = Get-ScopedTempArtifactPath -SpecPath $SpecPath -FileName 'fabric_datasource.env'
   Set-Content -Path $outPath -Value ($registeredDataSources -join [Environment]::NewLine) -Encoding UTF8
 }
 
 if($registeredDataSourceMap.Count -gt 0){
-  $mapPath = Join-Path ([IO.Path]::GetTempPath()) 'fabric_datasource_map.json'
+  $mapPath = Get-ScopedTempArtifactPath -SpecPath $SpecPath -FileName 'fabric_datasource_map.json'
   $registeredDataSourceMap | ConvertTo-Json -Depth 10 | Set-Content -Path $mapPath -Encoding UTF8
   Write-Host "Saved Fabric datasource map to $mapPath" -ForegroundColor DarkGray
 }

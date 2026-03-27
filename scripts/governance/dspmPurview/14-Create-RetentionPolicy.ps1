@@ -33,8 +33,10 @@ foreach($p in $spec.retentionPolicies){
     New-RetentionCompliancePolicy -Name $p.name -Enabled $true -ExchangeLocation $p.locations.Exchange -SharePointLocation $p.locations.SharePoint -OneDriveLocation $p.locations.OneDrive -TeamsChatLocation $p.locations.TeamsChat -TeamsChannelLocation $p.locations.TeamsChannel | Out-Null
     Write-Host "Created retention policy $($p.name)" -ForegroundColor Green
   } else { Write-Host "Retention policy exists: $($p.name)" -ForegroundColor DarkGray }
-    foreach($r in $p.rules){
-      $ruleName = if($r.name){ [string]$r.name } else { "$($p.name)-rule" }
+    $policyRules = @($p.rules)
+    for($ruleIndex = 0; $ruleIndex -lt $policyRules.Count; $ruleIndex++){
+      $r = $policyRules[$ruleIndex]
+      $ruleName = if($r.name){ [string]$r.name } else { "{0}-rule-{1}" -f $p.name, ($ruleIndex + 1) }
       $durationDays = Resolve-RetentionDurationDays -rule $r
 
       if([string]::IsNullOrWhiteSpace($ruleName) -or $null -eq $durationDays){

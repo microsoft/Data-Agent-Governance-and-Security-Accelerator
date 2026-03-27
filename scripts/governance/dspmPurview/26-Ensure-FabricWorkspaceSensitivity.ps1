@@ -12,6 +12,29 @@ function Get-OptionalStringProperty($obj, [string]$name){
 	return [string]$prop.Value
 }
 
+function Get-FabricLakehouseLabelTargetPath([string]$SpecPath){
+	$legacyPath = Join-Path ([IO.Path]::GetTempPath()) 'fabric_lakehouse_labels.json'
+	if([string]::IsNullOrWhiteSpace($SpecPath)){
+		return $legacyPath
+	}
+
+	try {
+		$resolvedSpecPath = (Resolve-Path -LiteralPath $SpecPath -ErrorAction Stop).Path
+	} catch {
+		$resolvedSpecPath = [IO.Path]::GetFullPath($SpecPath)
+	}
+
+	$sha256 = [System.Security.Cryptography.SHA256]::Create()
+	try {
+		$hashBytes = $sha256.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($resolvedSpecPath))
+	} finally {
+		if($sha256){ $sha256.Dispose() }
+	}
+
+	$specId = ([System.BitConverter]::ToString($hashBytes)).Replace('-', '').ToLowerInvariant()
+	return Join-Path ([IO.Path]::GetTempPath()) ("fabric_lakehouse_labels_{0}.json" -f $specId)
+}
+
 function Resolve-WorkspaceGuidFromSpec($workspace){
 	$workspaceId = Get-OptionalStringProperty -obj $workspace -name 'workspaceId'
 	$workspaceUrl = Get-OptionalStringProperty -obj $workspace -name 'workspaceUrl'
@@ -187,6 +210,6 @@ foreach($target in $lakehouseTargets){
 	}
 }
 
-$outPath = Join-Path ([IO.Path]::GetTempPath()) 'fabric_lakehouse_labels.json'
+$outPath = Get-FabricLakehouseLabelTargetPath -SpecPath $SpecPath
 $lakehouseTargets | ConvertTo-Json -Depth 10 | Set-Content -Path $outPath -Encoding UTF8
 Write-Host "Saved Fabric lakehouse label targets to $outPath" -ForegroundColor DarkGray

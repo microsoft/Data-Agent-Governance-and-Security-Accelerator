@@ -29,6 +29,31 @@ function Get-OptionalStringProperty($obj, [string]$name){
   return [string]$prop.Value
 }
 
+function Get-ScopedTempArtifactPath([string]$SpecPath, [string]$FileName){
+  $legacyPath = Join-Path ([IO.Path]::GetTempPath()) $FileName
+  if([string]::IsNullOrWhiteSpace($SpecPath)){
+    return $legacyPath
+  }
+
+  try {
+    $resolvedSpecPath = (Resolve-Path -LiteralPath $SpecPath -ErrorAction Stop).Path
+  } catch {
+    $resolvedSpecPath = [IO.Path]::GetFullPath($SpecPath)
+  }
+
+  $sha256 = [System.Security.Cryptography.SHA256]::Create()
+  try {
+    $hashBytes = $sha256.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($resolvedSpecPath))
+  } finally {
+    if($sha256){ $sha256.Dispose() }
+  }
+
+  $specId = ([System.BitConverter]::ToString($hashBytes)).Replace('-', '').ToLowerInvariant()
+  $baseName = [IO.Path]::GetFileNameWithoutExtension($FileName)
+  $extension = [IO.Path]::GetExtension($FileName)
+  return Join-Path ([IO.Path]::GetTempPath()) ("{0}_{1}{2}" -f $baseName, $specId, $extension)
+}
+
 function Get-AccessTokenForResource([string]$resourceUrl){
   try {
     $token = az account get-access-token --resource $resourceUrl --query accessToken -o tsv 2>$null
@@ -112,7 +137,7 @@ foreach($workspace in $workspaces){
 if($collectionMap.Count -gt 0){
   $tempDir = [IO.Path]::GetTempPath()
   if(-not (Test-Path -LiteralPath $tempDir)){ New-Item -ItemType Directory -Path $tempDir -Force | Out-Null }
-  $mapPath = Join-Path $tempDir 'fabric_purview_collections.json'
+  $mapPath = Get-ScopedTempArtifactPath -SpecPath $SpecPath -FileName 'fabric_purview_collections.json'
   $collectionMap | ConvertTo-Json -Depth 10 | Set-Content -Path $mapPath -Encoding UTF8
   Write-Host "Saved Fabric-Purview collection map to $mapPath" -ForegroundColor DarkGray
 }

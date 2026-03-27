@@ -15,6 +15,31 @@ function Get-OptionalStringProperty($obj, [string]$name){
   return [string]$prop.Value
 }
 
+function Get-ScopedTempArtifactPath([string]$SpecPath, [string]$FileName){
+  $legacyPath = Join-Path ([IO.Path]::GetTempPath()) $FileName
+  if([string]::IsNullOrWhiteSpace($SpecPath)){
+    return $legacyPath
+  }
+
+  try {
+    $resolvedSpecPath = (Resolve-Path -LiteralPath $SpecPath -ErrorAction Stop).Path
+  } catch {
+    $resolvedSpecPath = [IO.Path]::GetFullPath($SpecPath)
+  }
+
+  $sha256 = [System.Security.Cryptography.SHA256]::Create()
+  try {
+    $hashBytes = $sha256.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($resolvedSpecPath))
+  } finally {
+    if($sha256){ $sha256.Dispose() }
+  }
+
+  $specId = ([System.BitConverter]::ToString($hashBytes)).Replace('-', '').ToLowerInvariant()
+  $baseName = [IO.Path]::GetFileNameWithoutExtension($FileName)
+  $extension = [IO.Path]::GetExtension($FileName)
+  return Join-Path ([IO.Path]::GetTempPath()) ("{0}_{1}{2}" -f $baseName, $specId, $extension)
+}
+
 function Get-AccessTokenForResource([string]$resourceUrl){
   try {
     $token = az account get-access-token --resource $resourceUrl --query accessToken -o tsv 2>$null
@@ -66,7 +91,13 @@ function Resolve-WorkspaceGuid($workspace, [string]$workspaceName){
 
 function Resolve-CollectionIdFromMap([string]$workspaceName){
   if([string]::IsNullOrWhiteSpace($workspaceName)){ return $null }
-  $mapPath = Join-Path ([IO.Path]::GetTempPath()) 'fabric_purview_collections.json'
+  $mapPath = Get-ScopedTempArtifactPath -SpecPath $SpecPath -FileName 'fabric_purview_collections.json'
+  if(-not (Test-Path -Path $mapPath)){
+    $legacyPath = Join-Path ([IO.Path]::GetTempPath()) 'fabric_purview_collections.json'
+    if(Test-Path -Path $legacyPath){
+      $mapPath = $legacyPath
+    }
+  }
   if(-not (Test-Path -Path $mapPath)){ return $null }
   try {
     $raw = Get-Content -Path $mapPath -Raw
@@ -108,7 +139,13 @@ function Get-DatasourceCollectionId([string]$endpoint, $headers, [string]$dataso
 }
 
 function Resolve-DatasourceNameFromMap([string]$workspaceName, [string]$workspaceGuid){
-  $mapPath = Join-Path ([IO.Path]::GetTempPath()) 'fabric_datasource_map.json'
+  $mapPath = Get-ScopedTempArtifactPath -SpecPath $SpecPath -FileName 'fabric_datasource_map.json'
+  if(-not (Test-Path -Path $mapPath)){
+    $legacyPath = Join-Path ([IO.Path]::GetTempPath()) 'fabric_datasource_map.json'
+    if(Test-Path -Path $legacyPath){
+      $mapPath = $legacyPath
+    }
+  }
   if(-not (Test-Path -Path $mapPath)){ return $null }
   try {
     $raw = Get-Content -Path $mapPath -Raw
@@ -298,7 +335,13 @@ $endpoint = "https://$($spec.purviewAccount).purview.azure.com"
 $headers = @{ Authorization = "Bearer $purviewToken"; 'Content-Type' = 'application/json' }
 
 $datasourceNameFromEnv = $null
-$dsEnvPath = Join-Path ([IO.Path]::GetTempPath()) 'fabric_datasource.env'
+$dsEnvPath = Get-ScopedTempArtifactPath -SpecPath $SpecPath -FileName 'fabric_datasource.env'
+if(-not (Test-Path $dsEnvPath)){
+  $legacyEnvPath = Join-Path ([IO.Path]::GetTempPath()) 'fabric_datasource.env'
+  if(Test-Path $legacyEnvPath){
+    $dsEnvPath = $legacyEnvPath
+  }
+}
 if(Test-Path $dsEnvPath){
   Get-Content $dsEnvPath | ForEach-Object {
     if($_ -match '^FABRIC_DATASOURCE_NAME=(.*)$'){
@@ -436,7 +479,7 @@ foreach($workspace in $workspaces){
     $createCode = $null
     $createBody = $null
     try {
-      $resp = Invoke-WebRequest -Uri $createUrl -Method Put -Headers $headers -Body $bodyJson -UseBasicParsing
+      $resp = Invoke-WebRequest -Uri $createUrl -Method Put -Headers $headers -Body $bodyJson
       $createCode = [int]$resp.StatusCode
       $createBody = $resp.Content
     } catch {
@@ -459,7 +502,7 @@ foreach($workspace in $workspaces){
   $runCode = $null
   $runBody = $null
   try {
-    $runResp = Invoke-WebRequest -Uri $runUrl -Method Post -Headers $headers -Body '{}' -UseBasicParsing
+    $runResp = Invoke-WebRequest -Uri $runUrl -Method Post -Headers $headers -Body '{}'
     $runCode = [int]$runResp.StatusCode
     $runBody = $runResp.Content
   } catch {
