@@ -58,7 +58,11 @@ function Initialize-AutomationEnvironment {
     @{ Name = "Az.Accounts";            MinimumVersion = "5.0.0" },
     @{ Name = "Az.Resources";           MinimumVersion = $null },
     @{ Name = "Az.Monitor";             MinimumVersion = $null },
-    @{ Name = "Az.OperationalInsights"; MinimumVersion = $null }
+    @{ Name = "Az.OperationalInsights"; MinimumVersion = $null },
+    @{ Name = "Az.Purview";             MinimumVersion = $null },
+    @{ Name = "Az.Security";            MinimumVersion = $null },
+    @{ Name = "Az.Storage";             MinimumVersion = $null },
+    @{ Name = "Az.KeyVault";            MinimumVersion = $null }
   )
   if ($RequireExchange) {
     $moduleSpecs += @{ Name = "ExchangeOnlineManagement"; MinimumVersion = $null }
