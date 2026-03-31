@@ -39,6 +39,9 @@ $tenantId = Get-Default -value $env:AZURE_TENANT_ID -fallback (Get-Default -valu
 $subscriptionId = Get-Default -value $env:AZURE_SUBSCRIPTION_ID -fallback (Get-Default -value ($azContext.id) -fallback "")
 $resourceGroup = Get-Default -value $env:AZURE_RESOURCE_GROUP -fallback (Get-Default -value $env:AZURE_RESOURCE_GROUP_NAME -fallback "")
 $location = Get-Default -value $env:AZURE_LOCATION -fallback ""
+$purviewAccount = Get-Default -value $env:DAGA_PURVIEW_ACCOUNT -fallback ""
+$purviewRg = Get-Default -value $env:DAGA_PURVIEW_RESOURCE_GROUP -fallback ""
+$purviewSubId = Get-Default -value $env:DAGA_PURVIEW_SUBSCRIPTION_ID -fallback ""
 
 $templatePath = Join-Path $repoRoot "spec.dspm.template.json"
 if (-not (Test-Path -Path $templatePath)) {
@@ -60,6 +63,10 @@ $specDir = Split-Path -Parent $specPath
 if (-not (Test-Path -Path $specDir)) {
   New-Item -ItemType Directory -Path $specDir -Force | Out-Null
 }
+
+if ($purviewAccount) { $spec.purviewAccount = $purviewAccount }
+if ($purviewRg) { $spec.purviewResourceGroup = $purviewRg }
+if ($purviewSubId) { $spec.purviewSubscriptionId = $purviewSubId }
 
 $spec | ConvertTo-Json -Depth 20 | Out-File -FilePath $specPath -Encoding UTF8 -Force
 Write-Host "Created spec from template at $specPath" -ForegroundColor Green
