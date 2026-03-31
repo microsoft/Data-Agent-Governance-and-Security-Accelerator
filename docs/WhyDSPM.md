@@ -11,11 +11,11 @@ This guide explains **what each automation step does** and **why it matters** fo
 | Scenario | What's Governed | How It Works | Tags to Run |
 |----------|-----------------|--------------|-------------|
 | **M365 Copilot & 3rd-Party AI Apps** | Microsoft 365 Copilot, ChatGPT, other browser-based AI | Purview DSPM captures prompts/responses and routes them to **user mailboxes** for retention, eDiscovery, and DLP | `m365` |
-| **Azure AI Foundry & Custom Agents** | Azure OpenAI, Cognitive Services, custom agentic solutions | Defender for AI monitors via **diagnostic telemetry** to Log Analytics; Purview registers data sources for classification | `defender`, `foundry` |
+| **Microsoft Foundry & Custom Agents** | Azure OpenAI, Cognitive Services, custom agentic solutions | Defender for AI monitors via **diagnostic telemetry** to Log Analytics; Purview registers data sources for classification | `defender`, `foundry` |
 
 ### Key Differences
 
-| Aspect | M365 Copilot Path | Azure AI Foundry Path |
+| Aspect | M365 Copilot Path | Microsoft Foundry Path |
 |--------|-------------------|----------------------|
 | **Where prompts are stored** | User mailboxes (Exchange Online) | Log Analytics workspace (diagnostic logs) |
 | **Retention mechanism** | M365 retention policies | Log Analytics retention settings |
@@ -26,9 +26,9 @@ This guide explains **what each automation step does** and **why it matters** fo
 
 ### Choose Your Path
 
-- **"I want to govern M365 Copilot and browser-based AI apps"** → Run `m365` tag from a desktop with MFA
-- **"I want to protect Azure AI Foundry projects only"** → Run `defender,foundry` tags (no M365 license needed)
-- **"I want both"** → Run all tags, understanding that governance mechanisms differ per workload
+- **Govern M365 Copilot and browser-based AI apps** → Run `m365` tag from a desktop with MFA
+- **Protect Microsoft Foundry projects only** → Run `defender,foundry` tags (no M365 license needed)
+- **Cover both paths** → Run all tags, understanding that governance mechanisms differ per workload
 
 ---
 
@@ -39,7 +39,7 @@ This guide explains **what each automation step does** and **why it matters** fo
 | If you're protecting... | The accelerator... |
 |------------------------|-------------------|
 | **M365 Copilot / 3rd-party AI** | Wires your AI interactions into Purview so prompts live inside the same compliance boundary as email and Teams—subject to retention, eDiscovery, and DLP |
-| **Azure AI Foundry** | Enables Defender for AI threat detection, streams diagnostics to Log Analytics, and applies Content Safety guardrails—but prompts do NOT flow to mailboxes |
+| **Microsoft Foundry** | Enables Defender for AI threat detection, streams diagnostics to Log Analytics, and applies Content Safety guardrails—but prompts do NOT flow to mailboxes |
 | **Both** | Configures both paths, giving you unified visibility in Defender for Cloud while maintaining the distinct governance mechanisms |
 
 Every automation step corresponds to official Microsoft guidance—nothing proprietary or black-box. The scripts exist to remove toil while respecting your organization's approval gates.
@@ -69,7 +69,7 @@ These links validate the automation steps below:
 
 ## M365 Copilot Path (Steps 2-4)
 
-> **These steps apply to M365 Copilot and 3rd-party AI apps.** Skip to Step 5 if you're only protecting Azure AI Foundry.
+> **These steps apply to M365 Copilot and 3rd-party AI apps.** Skip to Step 5 if you're only protecting Microsoft Foundry.
 
 ### Step 2: Enable Unified Audit and M365 Prerequisites
 
@@ -83,7 +83,7 @@ These links validate the automation steps below:
 
 | What Happens | Why It Matters |
 |--------------|----------------|
-| The automation creates the "Secure interactions from enterprise apps" policy—the same one-click policy Microsoft Learn calls **DSPM for AI - Capture interactions for enterprise AI apps**. | **This is M365-specific.** Microsoft routes M365 Copilot prompts/responses to user mailboxes so they inherit your existing retention, eDiscovery, and Communication Compliance controls. Azure AI Foundry prompts do NOT flow through this path. |
+| The automation creates the "Secure interactions from enterprise apps" policy—the same one-click policy Microsoft Learn calls **DSPM for AI - Capture interactions for enterprise AI apps**. | **This is M365-specific.** Microsoft routes M365 Copilot prompts/responses to user mailboxes so they inherit your existing retention, eDiscovery, and Communication Compliance controls. Microsoft Foundry prompts do NOT flow through this path. |
 
 ---
 
@@ -95,15 +95,15 @@ These links validate the automation steps below:
 
 ---
 
-## Azure AI Foundry Path (Steps 5-8)
+## Microsoft Foundry Path (Steps 5-8)
 
-> **These steps apply to Azure AI Foundry and custom AI solutions.** They use Defender for AI and diagnostics, NOT mailbox-based capture.
+> **These steps apply to Microsoft Foundry and custom AI solutions.** They use Defender for AI and diagnostics, NOT mailbox-based capture.
 
 ### Step 5: Register Foundry Resources with Purview
 
 | What Happens | Why It Matters |
 |--------------|----------------|
-| The automation enumerates your Azure AI Foundry workspaces and projects, registers them as Purview data sources, and enables the **Secure data in Azure AI apps and agents** toggle. | **This connects Foundry to governance—but differently than M365.** Purview can classify data in Foundry resources, but prompts are NOT routed to mailboxes. Telemetry flows to Defender and Log Analytics instead. |
+| The automation enumerates your Microsoft Foundry workspaces and projects, registers them as Purview data sources, and enables the **Secure data in Azure AI apps and agents** toggle. | **This connects Foundry to governance—but differently than M365.** Purview can classify data in Foundry resources, but prompts are NOT routed to mailboxes. Telemetry flows to Defender and Log Analytics instead. |
 
 ---
 
@@ -143,7 +143,7 @@ These links validate the automation steps below:
 
 ## Summary: What You Get Per Path
 
-| Capability | M365 Copilot Path | Azure AI Foundry Path |
+| Capability | M365 Copilot Path | Microsoft Foundry Path |
 |------------|-------------------|----------------------|
 | **Prompt/response capture** | Yes - To user mailboxes | No - Diagnostic logs only |
 | **Retention policies** | Yes - M365 retention | Partial - Log Analytics retention (configure separately) |
@@ -158,7 +158,7 @@ These links validate the automation steps below:
 
 ## Who Should Care?
 
-| Stakeholder | M365 Copilot Path | Azure AI Foundry Path |
+| Stakeholder | M365 Copilot Path | Microsoft Foundry Path |
 |-------------|-------------------|----------------------|
 | **CISO / Security Leadership** | AI interactions governed by same controls as email—no shadow AI visibility gaps | Threat detection and posture management via Defender for Cloud |
 | **Compliance Officers** | Prompts subject to retention, eDiscovery, and DLP—audit-ready from day one | Diagnostic logs available for export; no built-in eDiscovery |
@@ -172,10 +172,10 @@ These links validate the automation steps below:
 
 | Objection | Response |
 |-----------|----------|
-| "We don't know what AI apps our users are accessing" | **M365 path:** DSPM for AI discovers AI interactions across M365 Copilot and third-party AI apps accessed via browser. **Foundry path:** You define which Foundry projects to monitor in your spec. |
-| "We only use Azure AI Foundry, not Copilot" | Perfect—run `defender,foundry` tags only. No M365 license required. You get threat detection and diagnostics without the M365 overhead. |
-| "Adding governance will slow down our AI initiatives" | The automation runs in minutes and doesn't block AI workloads—it observes and protects |
-| "We already have DLP—why do we need this?" | **M365 path:** Traditional DLP doesn't see AI prompts. DSPM extends your existing policies to cover AI-specific data flows. **Foundry path:** Use Content Safety blocklists instead of DLP. |
+| "Unclear which AI apps are in use" | **M365 path:** DSPM for AI discovers AI interactions across M365 Copilot and third-party AI apps accessed via browser. **Foundry path:** Define which Foundry projects to monitor in the spec. |
+| "Microsoft Foundry only" | Run `defender,foundry` tags only. No M365 license required. You get threat detection and diagnostics without the M365 overhead. |
+| "Governance will slow down AI initiatives" | The automation runs in minutes and doesn't block AI workloads—it observes and protects |
+| "Existing DLP is enough" | **M365 path:** Traditional DLP doesn't see AI prompts. DSPM extends existing policies to cover AI-specific data flows. **Foundry path:** Use Content Safety blocklists instead of DLP. |
 | "This seems complex" | The accelerator reduces 50+ portal clicks to a single `azd up` command with a config file |
 | "Do Foundry prompts go to user mailboxes?" | **No.** Only M365 Copilot/3rd-party AI interactions route to mailboxes. Foundry telemetry goes to Log Analytics via diagnostics. |
 

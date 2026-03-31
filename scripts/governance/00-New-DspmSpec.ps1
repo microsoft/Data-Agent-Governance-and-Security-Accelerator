@@ -4,116 +4,53 @@ param(
   [switch]$Force
 )
 
-if((Test-Path -Path $OutFile -PathType Leaf) -and -not $Force){
+if ((Test-Path -Path $OutFile -PathType Leaf) -and -not $Force) {
   Write-Host "Spec '$OutFile' already exists. Skipping scaffold (pass -Force to overwrite)." -ForegroundColor Yellow
   return
 }
 
-$tmpl = @'
-{
-  "tenantId": "<aad-tenant-guid>",
-  "subscriptionId": "<azure-sub-guid>",
-  "location": "eastus",
-  "resourceGroup": "rg-purview-dspm",
-  "purviewAccount": "mpv-dspm",
+$repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..\..")
+$templatePath = Join-Path $repoRoot "spec.dspm.template.json"
+if (-not (Test-Path -Path $templatePath -PathType Leaf)) {
+  throw "Template '$templatePath' not found."
+}
 
-  "dataSources": [
-    {
-      "name": "ds-storage-01",
-      "type": "AzureStorage",
-      "resourceId": "/subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.Storage/storageAccounts/<name>"
-    }
-  ],
+$template = Get-Content -Path $templatePath -Raw | ConvertFrom-Json
 
-  "scans": [
-    {
-      "dataSource": "ds-storage-01",
-      "name": "scan-storage-01",
-      "rulesetType": "System",
-      "rulesetName": "AzureStorage"
-    }
-  ],
-
-  "dlpPolicy": {
-    "name": "AI Egress Control (Baseline)",
-    "mode": "Enforce",
-    "locations": { "Exchange": "All", "SharePoint": "All", "OneDrive": "All", "Teams": "All" },
-    "rules": [
-      {
-        "name": "Block High-Confidence Sensitive Data to AI Destinations",
-        "sensitiveInfoTypes": [
-          { "name": "Credit Card Number", "count": 1, "confidence": 85 },
-          { "name": "U.S. Social Security Number (SSN)", "count": 1, "confidence": 85 }
-        ],
-        "blockAccess": true,
-        "notifyUser": true
-      }
-    ]
-  },
-
-  "labels": [
-    {
-      "name": "Confidential",
-      "displayName": "Confidential",
-      "tooltip": "Confidential data",
-      "publishPolicyName": "Publish: Confidential (All Users)",
-      "encryptionEnabled": true,
-      "publishScopes": { "Exchange": "All", "SharePoint": "All", "OneDrive": "All" }
-    }
-  ],
-
-  "retentionPolicies": [
-    {
-      "name": "AI Data – 7 Years",
-      "rules": [ { "name": "Keep 7y then Delete", "durationDays": 2555, "action": "Delete" } ],
-      "locations": { "Exchange": "All", "SharePoint": "All", "OneDrive": "All", "TeamsChat": "All", "TeamsChannel": "All" }
-    }
-  ],
-
-  "activityExport": {
-    "outputPath": "./audit_export",
-    "contentTypes": ["Audit.General","Audit.SharePoint","Audit.Exchange","DLP.All","Audit.AzureActiveDirectory","Audit.PowerBI"]
-  },
-
-  "azurePolicies": [
-    {
-      "name": "deny-public-access-cognitiveservices",
-      "displayName": "Cognitive Services accounts should disable public network access",
-      "scope": "resourceGroup",
-      "parameters": {}
-    }
-  ],
-
-  "defenderForAI": {
-    "enableDefenderForCloudPlans": ["CognitiveServices","Storage","Containers"],
-    "logAnalyticsWorkspaceId": "/subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.OperationalInsights/workspaces/<law>",
-    "diagnosticCategories": ["Audit","RequestResponse","AllMetrics"]
-  },
-
-  "foundry": {
-    "resources": [
-      {
-        "name": "aoai-eastus-01",
-        "resourceId": "/subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.CognitiveServices/accounts/<openaiAccount>",
-        "diagnostics": true,
-        "logCategories": ["Audit","RequestResponse","AllMetrics"],
-        "tags": { "stage": "4", "owner": "sas-accel", "classification": "ai-workload" }
-      }
-    ],
-    "contentSafety": {
-      "endpoint": "https://<contentsafety>.cognitiveservices.azure.com",
-      "apiKeySecretRef": {
-        "keyVaultResourceId": "/subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.KeyVault/vaults/<kv>",
-        "secretName": "ContentSafety-ApiKey"
-      },
-      "textBlocklists": [
-        { "name": "pii-terms", "items": ["password","api key","secret","ssn","credit card"] }
-      ],
-      "harmSeverityThreshold": 6
+try {
+  $accountJson = az account show --output json 2>$null
+  if ($accountJson) {
+    $azContext = $accountJson | ConvertFrom-Json
+    if ($azContext.tenantId) { $template.tenantId = $azContext.tenantId }
+    if ($azContext.id) {
+      $template.subscriptionId = $azContext.id
+      if ($template.aiSubscriptionId -ne $null) { $template.aiSubscriptionId = $azContext.id }
     }
   }
+} catch {
 }
-'@
 
-$tmpl | Out-File -FilePath $OutFile -Encoding UTF8 -Force
-Write-Host "Scaffolded spec at $OutFile" -ForegroundColor Green
+if ($env:AZURE_TENANT_ID) { $template.tenantId = $env:AZURE_TENANT_ID }
+if ($env:AZURE_SUBSCRIPTION_ID) {
+  $template.subscriptionId = $env:AZURE_SUBSCRIPTION_ID
+  if ($template.aiSubscriptionId -ne $null) { $template.aiSubscriptionId = $env:AZURE_SUBSCRIPTION_ID }
+  if ($template.purviewSubscriptionId -ne $null -and [string]::IsNullOrWhiteSpace([string]$template.purviewSubscriptionId)) { $template.purviewSubscriptionId = $env:AZURE_SUBSCRIPTION_ID }
+}
+if ($env:AZURE_RESOURCE_GROUP) { $template.resourceGroup = $env:AZURE_RESOURCE_GROUP }
+elseif ($env:AZURE_RESOURCE_GROUP_NAME) { $template.resourceGroup = $env:AZURE_RESOURCE_GROUP_NAME }
+if ($env:AZURE_LOCATION) { $template.location = $env:AZURE_LOCATION }
+
+if ($template.subscriptionId -and $template.purviewSubscriptionId -ne $null -and [string]::IsNullOrWhiteSpace([string]$template.purviewSubscriptionId)) {
+  $template.purviewSubscriptionId = $template.subscriptionId
+}
+if ($template.resourceGroup -and $template.purviewResourceGroup -ne $null -and [string]::IsNullOrWhiteSpace([string]$template.purviewResourceGroup)) {
+  $template.purviewResourceGroup = $template.resourceGroup
+}
+
+$destinationDir = Split-Path -Parent $OutFile
+if ($destinationDir -and -not (Test-Path -Path $destinationDir)) {
+  New-Item -ItemType Directory -Path $destinationDir -Force | Out-Null
+}
+
+$template | ConvertTo-Json -Depth 20 | Out-File -FilePath $OutFile -Encoding UTF8 -Force
+Write-Host "Scaffolded spec at $OutFile from spec.dspm.template.json" -ForegroundColor Green

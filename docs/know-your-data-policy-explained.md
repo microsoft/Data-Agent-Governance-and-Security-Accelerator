@@ -21,7 +21,7 @@ Audit and Communication Compliance (for monitoring).
 ### How KYD Policy Works with Azure Foundry Accounts
 
 KYD (Know Your Data) in Microsoft Purview is about discovering and classifying sensitive data across your environment, including AI interactions.
-When you use Azure AI Foundry to build or deploy AI apps and agents, Purview can extend KYD principles to those apps:
+When you use Microsoft Foundry to build or deploy AI apps and agents, Purview can extend KYD principles to those apps:
 
 It classifies sensitive data accessed or processed by Foundry-based AI agents.
 It applies sensitivity labels and compliance rules to prompts, responses, and any data used at runtime.

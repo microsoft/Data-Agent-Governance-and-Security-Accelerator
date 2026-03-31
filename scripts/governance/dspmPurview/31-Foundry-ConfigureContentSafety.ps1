@@ -31,13 +31,23 @@ else{
 }
 if($cs.textBlocklists){
   foreach($bl in $cs.textBlocklists){
-    $uri = "$base/contentsafety/text/blocklists/$($bl.name)?api-version=2024-02-15-preview"
-    try{ Invoke-RestMethod -Method PUT -Uri $uri -Headers $headers -ContentType "application/json" -Body (@{}|ConvertTo-Json) | Out-Null; Write-Host "Ensured blocklist: $($bl.name)" -ForegroundColor Green }catch{ Write-Host "Blocklist ensure may exist: $($_.Exception.Message)" -ForegroundColor DarkGray }
-    if($bl.items -and $bl.items.Count -gt 0){
-      $itemsUri = "$base/contentsafety/text/blocklists/$($bl.name)/:blockItems?api-version=2024-02-15-preview"
-      $body = @{ blockItems=@() }; foreach($itm in $bl.items){ $body.blockItems += @{ description=$itm; text=$itm } }
+    $blocklistName = if($bl.name){ [string]$bl.name } elseif($bl.blocklistName){ [string]$bl.blocklistName } else { '' }
+    if([string]::IsNullOrWhiteSpace($blocklistName)){
+      Write-Host "Skipping blocklist entry with missing name/blocklistName." -ForegroundColor Yellow
+      continue
+    }
+
+    $blockItems = @()
+    if($bl.items){ $blockItems = @($bl.items) }
+    elseif($bl.terms){ $blockItems = @($bl.terms) }
+
+    $uri = "$base/contentsafety/text/blocklists/$blocklistName?api-version=2024-02-15-preview"
+    try{ Invoke-RestMethod -Method PUT -Uri $uri -Headers $headers -ContentType "application/json" -Body (@{}|ConvertTo-Json) | Out-Null; Write-Host "Ensured blocklist: $blocklistName" -ForegroundColor Green }catch{ Write-Host "Blocklist ensure may exist: $($_.Exception.Message)" -ForegroundColor DarkGray }
+    if($blockItems -and $blockItems.Count -gt 0){
+      $itemsUri = "$base/contentsafety/text/blocklists/$blocklistName/:blockItems?api-version=2024-02-15-preview"
+      $body = @{ blockItems=@() }; foreach($itm in $blockItems){ $body.blockItems += @{ description=$itm; text=$itm } }
       Invoke-RestMethod -Method POST -Uri $itemsUri -Headers $headers -ContentType "application/json" -Body ($body|ConvertTo-Json -Depth 10) | Out-Null
-      Write-Host "Added $($bl.items.Count) items to '$($bl.name)'" -ForegroundColor Green
+      Write-Host "Added $($blockItems.Count) items to '$blocklistName'" -ForegroundColor Green
     }
   }
 }

@@ -1,37 +1,37 @@
 {
   "tenantId": "11111111-2222-3333-4444-555555555555",
   "subscriptionId": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
-  "resourceGroup": "rg-governance-example",
+  "resourceGroup": "Governance",
   "location": "eastus2",
   "purviewAccount": "contosoPurview",
-  "purviewResourceGroup": "rg-governance-example",
-  "purviewSubscriptionId": "ffffffff-1111-2222-3333-444444444444",
-  "aiResourceGroup": "rg-ai-example",
+  "purviewResourceGroup": "Governance",
+  "purviewSubscriptionId": "bbbbbbbb-cccc-dddd-eeee-ffffffffffff",
+  "aiResourceGroup": "rg-ai-sample",
   "aiSubscriptionId": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
   "aiFoundry": {
-    "name": "project-example",
-    "resourceId": "/subscriptions/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/resourceGroups/rg-ai-example/providers/Microsoft.CognitiveServices/accounts/ai-example/projects/project-example"
+    "name": "project-sample-a",
+    "resourceId": "/subscriptions/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/resourceGroups/rg-ai-sample/providers/Microsoft.CognitiveServices/accounts/ai-sample-a/projects/project-sample-a"
   },
   "foundry": {
     "resources": [
       {
-        "name": "project-example",
-        "resourceId": "/subscriptions/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/resourceGroups/rg-ai-example/providers/Microsoft.CognitiveServices/accounts/ai-example",
+        "name": "project-sample-a",
+        "resourceId": "/subscriptions/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/resourceGroups/rg-ai-sample/providers/Microsoft.CognitiveServices/accounts/ai-sample-a",
         "diagnostics": true,
         "tags": {
           "Environment": "Dev",
           "Owner": "DataGov",
-          "CostCenter": "example001"
+          "CostCenter": "sample-a"
         }
       },
       {
-        "name": "project-example-2",
-        "resourceId": "/subscriptions/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/resourceGroups/rg-ai-example-2/providers/Microsoft.CognitiveServices/accounts/ai-example-2/projects/project-example-2",
+        "name": "project-sample-b",
+        "resourceId": "/subscriptions/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/resourceGroups/rg-ai-sample-b/providers/Microsoft.CognitiveServices/accounts/ai-sample-b/projects/project-sample-b",
         "diagnostics": true,
         "tags": {
           "Environment": "Dev",
           "Owner": "DataGov",
-          "CostCenter": "example002"
+          "CostCenter": "sample-b"
         }
       }
     ],
@@ -46,12 +46,13 @@
     }
   },
   "fabric": {
+    "scanAutomationMode": "runOnly",
     "workspaces": [
       {
-        "name": "workspace-example-1",
-        "workspaceId": "11111111-aaaa-bbbb-cccc-222222222222",
+        "name": "workspace-sample-a",
+        "workspaceId": "",
         "workspaceUrl": "https://app.powerbi.com/groups/11111111-aaaa-bbbb-cccc-222222222222",
-        "scanName": "scan-example-1",
+        "scanName": "scan-[name]",
         "lakehouses": [
           {
             "name": "bronze",
@@ -64,10 +65,10 @@
         ]
       },
       {
-        "name": "workspace-example-2",
-        "workspaceId": "33333333-dddd-eeee-ffff-444444444444",
-        "workspaceUrl": "https://app.powerbi.com/groups/33333333-dddd-eeee-ffff-444444444444",
-        "scanName": "scan-example-2",
+        "name": "workspace-sample-b",
+        "workspaceId": "33333333-4444-5555-6666-777777777777",
+        "workspaceUrl": "https://app.powerbi.com/groups/33333333-4444-5555-6666-777777777777",
+        "scanName": "scan-[name]",
         "lakehouses": [
           {
             "name": "bronze",
@@ -75,7 +76,27 @@
           },
           {
             "name": "silver",
+            "sensitivityLabel": "General\\All Employees (unrestricted)"
+          },
+          {
+            "name": "gold",
             "sensitivityLabel": "Public"
+          }
+        ]
+      },
+      {
+        "name": "workspace-sample-c",
+        "workspaceId": "88888888-9999-aaaa-bbbb-cccccccccccc",
+        "workspaceUrl": "https://app.powerbi.com/groups/88888888-9999-aaaa-bbbb-cccccccccccc",
+        "scanName": "scan-[name]",
+        "lakehouses": [
+          {
+            "name": "bronze",
+            "sensitivityLabel": "Public"
+          },
+          {
+            "name": "silver",
+            "sensitivityLabel": "General\\All Employees (unrestricted)"
           },
           {
             "name": "gold",
@@ -85,7 +106,7 @@
       }
     ]
   },
-  "logAnalyticsWorkspaceId": "55555555-6666-7777-8888-999999999999",
+  "logAnalyticsWorkspaceId": "99999999-aaaa-bbbb-cccc-dddddddddddd",
   "dataSources": [],
   "scans": [],
   "dlpPolicy": {
@@ -118,7 +139,7 @@
   },
   "labels": [
     {
-      "name": "ExampleConfidential",
+      "name": "ExampleSemiConfidential",
       "publishPolicyName": "Publish: Confidential",
       "encryptionEnabled": false,
       "publishScopes": {
@@ -136,7 +157,7 @@
       "Storage",
       "Containers"
     ],
-    "logAnalyticsWorkspaceId": "55555555-6666-7777-8888-999999999999",
+    "logAnalyticsWorkspaceId": "99999999-aaaa-bbbb-cccc-dddddddddddd",
     "diagnosticCategories": [
       "Audit",
       "RequestResponse",

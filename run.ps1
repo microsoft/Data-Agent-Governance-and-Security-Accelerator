@@ -88,6 +88,34 @@ function Initialize-AutomationEnvironment {
   Import-Module Az.Accounts -ErrorAction Stop | Out-Null
 }
 
+function Test-HasFabricLakehouseSensitivityLabels {
+  param([string]$Path)
+
+  if([string]::IsNullOrWhiteSpace($Path) -or -not (Test-Path -Path $Path)){
+    return $false
+  }
+
+  try {
+    $spec = Get-Content $Path -Raw | ConvertFrom-Json
+    if(-not $spec.fabric -or -not $spec.fabric.workspaces){ return $false }
+
+    foreach($workspace in @($spec.fabric.workspaces)){
+      $lakehousesProp = $workspace.PSObject.Properties['lakehouses']
+      if($null -eq $lakehousesProp -or $null -eq $lakehousesProp.Value){ continue }
+      foreach($lakehouse in @($lakehousesProp.Value)){
+        $labelProp = $lakehouse.PSObject.Properties['sensitivityLabel']
+        if($labelProp -and -not [string]::IsNullOrWhiteSpace([string]$labelProp.Value)){
+          return $true
+        }
+      }
+    }
+  } catch {
+    Write-Warning "Unable to inspect Fabric lakehouse labels from spec '$Path': $($_.Exception.Message)"
+  }
+
+  return $false
+}
+
 Initialize-AutomationEnvironment -RequireExchange:$ConnectM365
 $planEntry = {
   param([int]$Order,[string]$File,[string[]]$Tags,[bool]$NeedsSpec,[hashtable]$Parameters)
@@ -133,14 +161,14 @@ $plan = @(
   & $planEntry -Order 100 -File "scripts/governance/dspmPurview/20-Subscribe-ManagementActivity.ps1" -Tags @("audit","dspm") -NeedsSpec:$true -Parameters $null
   & $planEntry -Order 110 -File "scripts/governance/dspmPurview/21-Export-Audit.ps1" -Tags @("audit","dspm") -NeedsSpec:$true -Parameters $null
   & $planEntry -Order 120 -File "scripts/governance/dspmPurview/05-Assign-AzurePolicies.ps1" -Tags @("policies","dspm","defender") -NeedsSpec:$true -Parameters $null
-  & $planEntry -Order 130 -File "scripts/defender/defenderForAI/06-Enable-DefenderPlans.ps1" -Tags @("defender") -NeedsSpec:$true -Parameters $null
-  & $planEntry -Order 140 -File "scripts/defender/defenderForAI/07-Enable-Diagnostics.ps1" -Tags @("defender","diagnostics","foundry") -NeedsSpec:$true -Parameters $null
+  & $planEntry -Order 130 -File "scripts/defender/06-Enable-DefenderPlans.ps1" -Tags @("defender") -NeedsSpec:$true -Parameters $null
+  & $planEntry -Order 140 -File "scripts/defender/07-Enable-Diagnostics.ps1" -Tags @("defender","diagnostics","foundry") -NeedsSpec:$true -Parameters $null
   & $planEntry -Order 150 -File "scripts/governance/dspmPurview/25-Tag-ResourcesFromSpec.ps1" -Tags @("tags","foundry","dspm") -NeedsSpec:$true -Parameters $null
-  # Fabric/OneLake steps temporarily disabled until workspace exists
-  # & $planEntry -Order 160 -File "scripts/governance/dspmPurview/26-Register-OneLake.ps1" -Tags @("scans","foundry","dspm") -NeedsSpec:$true -Parameters $null
-  # & $planEntry -Order 170 -File "scripts/governance/dspmPurview/27-Register-FabricWorkspace.ps1" -Tags @("scans","foundry","dspm") -NeedsSpec:$true -Parameters $null
-  # & $planEntry -Order 180 -File "scripts/governance/dspmPurview/28-Trigger-OneLakeScan.ps1" -Tags @("scans","foundry","dspm") -NeedsSpec:$true -Parameters $null
-  # & $planEntry -Order 190 -File "scripts/governance/dspmPurview/29-Trigger-FabricWorkspaceScan.ps1" -Tags @("scans","foundry","dspm") -NeedsSpec:$true -Parameters $null
+  & $planEntry -Order 160 -File "scripts/governance/dspmPurview/26-Ensure-FabricWorkspaceSensitivity.ps1" -Tags @("scans","foundry","dspm") -NeedsSpec:$true -Parameters $null
+  & $planEntry -Order 162 -File "scripts/governance/dspmPurview/26-Apply-FabricLakehouseSensitivity.ps1" -Tags @("scans","foundry","dspm") -NeedsSpec:$true -Parameters $null
+  & $planEntry -Order 165 -File "scripts/governance/dspmPurview/28-Ensure-PurviewCollectionsForFabricWorkspaces.ps1" -Tags @("scans","foundry","dspm") -NeedsSpec:$true -Parameters $null
+  & $planEntry -Order 170 -File "scripts/governance/dspmPurview/27-Register-FabricWorkspace.ps1" -Tags @("scans","foundry","dspm") -NeedsSpec:$true -Parameters $null
+  & $planEntry -Order 190 -File "scripts/governance/dspmPurview/29-Trigger-FabricWorkspaceScan.ps1" -Tags @("scans","foundry","dspm") -NeedsSpec:$true -Parameters $null
   & $planEntry -Order 200 -File "scripts/governance/dspmPurview/30-Foundry-RegisterResources.ps1" -Tags @("foundry","ops") -NeedsSpec:$true -Parameters $null
   & $planEntry -Order 210 -File "scripts/governance/dspmPurview/31-Foundry-ConfigureContentSafety.ps1" -Tags @("foundry","contentsafety","defender") -NeedsSpec:$true -Parameters $null
   & $planEntry -Order 220 -File "scripts/governance/dspmPurview/17-Export-ComplianceInventory.ps1" -Tags @("ops") -NeedsSpec:$false -Parameters $null
@@ -161,8 +189,15 @@ if ($selected.Length -eq 0) {
 
 Write-Host "Running steps for tags: $($Tags -join ', ')" -ForegroundColor Cyan
 
+$fabricLabelsConfigured = Test-HasFabricLakehouseSensitivityLabels -Path $SpecPath
+
 # PSScriptAnalyzerSuppressMessage("PSAvoidAssignmentToAutomaticVariable", "", "No automatic variables are assigned; parameters are tracked via local ordered hashtable")
 foreach ($step in $selected) {
+  if ($step.File -eq "scripts/governance/dspmPurview/26-Apply-FabricLakehouseSensitivity.ps1" -and -not $fabricLabelsConfigured) {
+    Write-Host "Skipping Fabric lakehouse label apply step because no lakehouse sensitivity labels are configured in spec." -ForegroundColor DarkGray
+    continue
+  }
+
   $stepParams = [ordered]@{}
   if ($step.NeedsSpec) {
     if (-not (Test-Path -Path $SpecPath)) {
@@ -181,7 +216,14 @@ foreach ($step in $selected) {
   }
 
   $requiresM365 = $step.Tags -contains "m365"
+  if(-not $requiresM365 -and $step.File -eq "scripts/governance/dspmPurview/26-Ensure-FabricWorkspaceSensitivity.ps1" -and $fabricLabelsConfigured){
+    $requiresM365 = $true
+  }
   if ($requiresM365) {
+    if ($step.File -eq "scripts/governance/dspmPurview/26-Ensure-FabricWorkspaceSensitivity.ps1" -and $fabricLabelsConfigured) {
+      Write-Host "Fabric labels detected; Exchange Online label permissions are required, otherwise labels will not be applied." -ForegroundColor Cyan
+    }
+
     if (-not $ConnectM365) {
       throw "Step '$($step.File)' requires Microsoft 365 connectivity. Re-run with -ConnectM365 plus either -M365UserPrincipalName or app-only parameters."
     }

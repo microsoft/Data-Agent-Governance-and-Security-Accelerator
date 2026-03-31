@@ -122,7 +122,7 @@ Not all Defender plans may be necessary for your scenario:
 | Microsoft Purview (governance) | Azure subscription + Purview account |
 | Defender for Cloud | Azure subscription (plans are per-resource) |
 | Log Analytics | Azure subscription (per-GB ingestion) |
-| Azure AI Foundry | Azure subscription + AI resource quota |
+| Microsoft Foundry | Azure subscription + AI resource quota |
 
 ---
 

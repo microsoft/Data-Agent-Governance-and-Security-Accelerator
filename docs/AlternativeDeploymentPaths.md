@@ -58,15 +58,15 @@ Get-AzContext  # Verify tenant/subscription match your spec
 | `m365` | Exchange Online / Compliance Center steps requiring interactive auth: Unified Audit, Know Your Data policy, DLP/label/retention settings | `./run.ps1 -Tags m365 -SpecPath ./spec.local.json` |
 | `dspm` | Broader Purview governance: scan registration, audit subscriptions/exports, Azure policy assignments, tagging, posture validation | `./run.ps1 -Tags foundation,dspm -SpecPath ./spec.local.json` |
 | `defender` | Defender for AI enablement: plans, diagnostics, content-safety wiring | `./run.ps1 -Tags defender -SpecPath ./spec.local.json` |
-| `foundry` | Azure AI Foundry integration: resource registration, tagging, diagnostics, content safety | `./run.ps1 -Tags foundry -SpecPath ./spec.local.json` |
+| `foundry` | Microsoft Foundry integration: resource registration, tagging, diagnostics, content safety | `./run.ps1 -Tags foundry -SpecPath ./spec.local.json` |
 | `audit` | Replay audit export scripts only | `./run.ps1 -Tags audit -SpecPath ./spec.local.json` |
 | `all` | Runs everything end-to-end | `./run.ps1 -Tags all -SpecPath ./spec.local.json` |
 
 ### Common Deployment Scenarios
 
-| I want to... | Run these tags | Prerequisites | Key spec sections |
+| Goal | Run these tags | Prerequisites | Key spec sections |
 |-------------|----------------|---------------|-------------------|
-| **Secure Azure AI Foundry only** | `defender,foundry` | Azure Contributor on subscription with Foundry projects | `aiFoundry.*`, `foundry.resources[]`, `defenderForAI.enableDefenderForCloudPlans` |
+| **Secure Microsoft Foundry only** | `defender,foundry` | Azure Contributor on subscription with Foundry projects | `aiFoundry.*`, `foundry.resources[]`, `defenderForAI.enableDefenderForCloudPlans` |
 | **Full Purview DSPM for AI (no M365)** | `foundation,dspm,defender,foundry` | Azure Contributor + Purview Data Source Admin | All Azure sections (skip `dlpPolicy`, `labels`, `retentionPolicies`) |
 | **Enable M365 Copilot governance** | `m365` (run separately from desktop) | Desktop + MFA + Exchange Online admin + E5 license | `dlpPolicy`, `labels`, `retentionPolicies` |
 | **Everything** | `all` | All of the above (may require multiple operators) | All spec sections |
@@ -109,7 +109,7 @@ If your team splits responsibilities:
 
 ## Foundry-Only Configuration
 
-For organizations that only need to govern Azure AI Foundry projects without full Purview DSPM or M365 setup:
+For organizations that only need to govern Microsoft Foundry projects without full Purview DSPM or M365 setup:
 
 ### Prerequisites
 - Azure Contributor RBAC on the subscription containing your Foundry projects
@@ -124,15 +124,18 @@ Populate only these sections in `spec.local.json`:
 {
   "tenantId": "<your-tenant-id>",
   "subscriptionId": "<subscription-with-foundry>",
+  "aiResourceGroup": "<foundry-resource-group>",
+  "aiSubscriptionId": "<subscription-with-foundry>",
   "aiFoundry": {
-    "subscriptionId": "<same-subscription>",
-    "resourceGroupName": "<foundry-resource-group>"
+    "name": "<foundry-project-name>",
+    "resourceId": "/subscriptions/<subscription-guid>/resourceGroups/<foundry-resource-group>/providers/Microsoft.CognitiveServices/accounts/<account-name>/projects/<foundry-project-name>"
   },
   "foundry": {
     "resources": [
       {
-        "name": "<foundry-project-name>",
-        "resourceGroup": "<foundry-resource-group>"
+        "name": "<friendly-resource-name>",
+        "resourceId": "/subscriptions/<subscription-guid>/resourceGroups/<foundry-resource-group>/providers/Microsoft.CognitiveServices/accounts/<account-name>",
+        "diagnostics": true
       }
     ]
   },
@@ -141,6 +144,8 @@ Populate only these sections in `spec.local.json`:
   }
 }
 ```
+
+Use full Azure resource IDs for `aiFoundry.resourceId` and each `foundry.resources[].resourceId`. This matches the schema described in [spec-local-reference.md](./spec-local-reference.md).
 
 ### Deploy commands
 
@@ -173,7 +178,7 @@ Set-AzContext -Subscription <subscriptionId>
 
 ### Devcontainer / azd post-provision flow
 
-The `azure.yaml` and `infra/main.bicep` let you run `azd up` purely to trigger the post-provision hook - no infrastructure needs to be deployed.
+The `azure.yaml` and `infra/main.bicepparam` let you run `azd up` to trigger the post-provision hook using the repo's parameterized defaults.
 
 The hook (`hooks/postprovision.ps1`) reuses the current `azd auth login` context by importing Azure CLI tokens into Az PowerShell before invoking `run.ps1`.
 
@@ -187,9 +192,23 @@ The hook (`hooks/postprovision.ps1`) reuses the current `azd auth login` context
 
 Edit `infra/main.bicepparam` to control:
 - `dagaSpecPath` - spec file path
-- `dagaPostprovisionTags` - comma-separated tags to run
-- `dagaPostprovisionConnectM365` - enable M365 steps
-- `dagaPostprovisionM365Upn` - UPN for M365 auth
+- `dagaTags` - tags to run after provisioning
+- `dagaConnectM365` - enable M365 steps
+- `dagaM365UserPrincipalName` - UPN for interactive M365 auth when an operator can complete MFA
+- `dagaM365AppId` - app registration client ID for app-only M365 auth
+- `dagaM365Organization` - Microsoft 365 organization or tenant domain, such as `contoso.onmicrosoft.com`
+- `dagaM365CertificateThumbprint` - certificate thumbprint for app-only auth using a certificate installed on the machine
+- `dagaM365CertificatePath` - path to a `.pfx` certificate file for app-only auth
+- `dagaM365CertificatePassword` - password for the `.pfx` certificate file
+
+These M365 parameters are not used for Azure deployment itself. They are only used when the `m365` workflow needs to authenticate to Exchange Online and Security & Compliance cmdlets.
+
+Use the parameters in one of these two ways:
+
+- Interactive auth: `dagaM365UserPrincipalName`
+- App-only auth: `dagaM365AppId` + `dagaM365Organization` plus either `dagaM365CertificateThumbprint` or `dagaM365CertificatePath` + `dagaM365CertificatePassword`
+
+App-only auth is mainly useful for unattended runs, GitHub Actions, or other CI/CD scenarios where browser-based sign-in is not practical.
 
 ---
 
@@ -276,8 +295,8 @@ pwsh ./scripts/governance/dspmPurview/02-Ensure-PurviewAccount.ps1 -SpecPath ./s
 
 **Defender for AI posture:**
 ```powershell
-pwsh ./scripts/defender/defenderForAI/06-Enable-DefenderPlans.ps1 -SpecPath ./spec.local.json
-pwsh ./scripts/defender/defenderForAI/07-Enable-Diagnostics.ps1 -SpecPath ./spec.local.json
+pwsh ./scripts/defender/06-Enable-DefenderPlans.ps1 -SpecPath ./spec.local.json
+pwsh ./scripts/defender/07-Enable-Diagnostics.ps1 -SpecPath ./spec.local.json
 ```
 
 **Foundry registration + Content Safety:**
@@ -331,7 +350,7 @@ Point `run.ps1 -SpecPath` to the one you need.
 | ------- | ------- | ---------------- |
 | `tenantId`, `subscriptionId` | Target tenant and subscription | All |
 | `purview.*` | Purview account and data source settings | `foundation`, `dspm` |
-| `aiFoundry.*` | Foundry subscription and resource group | `foundry`, `defender` |
+| `aiResourceGroup`, `aiSubscriptionId`, `aiFoundry.*` | Foundry resource scope and primary project reference | `foundry`, `defender` |
 | `foundry.resources[]` | List of Foundry projects to govern | `foundry` |
 | `defenderForAI.*` | Defender plans to enable | `defender` |
 | `dlpPolicy`, `labels`, `retentionPolicies` | M365 compliance settings | `m365` |
@@ -479,7 +498,7 @@ These scripts are idempotent and safe to re-run:
 | Folder | Purpose | Key scripts |
 | ------ | ------- | ----------- |
 | `scripts/governance` | Spec management, Purview bootstrap, policy creation, audit exports, Foundry integration | `00-New-DspmSpec.ps1`, `02-Ensure-PurviewAccount.ps1`, `12-Create-DlpPolicy.ps1`, `30-Foundry-RegisterResources.ps1` |
-| `scripts/defender/defenderForAI` | Defender for Cloud AI plans, diagnostics | `06-Enable-DefenderPlans.ps1`, `07-Enable-Diagnostics.ps1` |
+| `scripts/defender` | Defender for Cloud AI plans, diagnostics | `06-Enable-DefenderPlans.ps1`, `07-Enable-Diagnostics.ps1` |
 | `scripts/exchangeOnline` | Security and Compliance PowerShell (behind `m365` tag) | `10-Connect-Compliance.ps1`, `11-Enable-UnifiedAudit.ps1` |
 
 Each script is idempotent and checks for prerequisites before applying changes.

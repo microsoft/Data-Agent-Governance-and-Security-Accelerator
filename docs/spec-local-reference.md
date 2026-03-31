@@ -10,6 +10,8 @@ This guide documents every field that appears in the working `spec.local.json` *
 
 **[spec-example.json](./spec-example.json)** — A complete example with realistic (fictional) values and inline comments explaining each section.
 
+The example mirrors the current production `spec.local.json` schema and includes Fabric lakehouse sensitivity-label examples (`Public`, `Personal`, and parent/child format like `Confidential\\All Employees`).
+
 **To create your spec file:**
 ```powershell
 # Option 1: Copy from the example (recommended for learning)
@@ -27,6 +29,162 @@ Then edit `spec.local.json` with your actual Azure resource IDs and configuratio
 
 ---
 
+## Example spec.local.json (synthetic)
+
+This example mirrors the most recently tested spec file content but uses **synthetic** tenant IDs, subscription IDs, resource names, and workspace GUIDs. Replace all values with those from your tenant.
+
+```json
+{
+	"tenantId": "11111111-2222-3333-4444-555555555555",
+	"subscriptionId": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+	"resourceGroup": "rg-governance-sample",
+	"location": "eastus2",
+	"purviewAccount": "contoso-purview",
+	"purviewResourceGroup": "rg-governance-sample",
+	"purviewSubscriptionId": "bbbbbbbb-cccc-dddd-eeee-ffffffffffff",
+	"aiResourceGroup": "rg-ai-sample",
+	"aiSubscriptionId": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+	"aiFoundry": {
+		"name": "project-sample-a",
+		"resourceId": "/subscriptions/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/resourceGroups/rg-ai-sample/providers/Microsoft.CognitiveServices/accounts/ai-sample-a/projects/project-sample-a"
+	},
+	"foundry": {
+		"resources": [
+			{
+				"name": "project-sample-a",
+				"resourceId": "/subscriptions/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/resourceGroups/rg-ai-sample/providers/Microsoft.CognitiveServices/accounts/ai-sample-a",
+				"diagnostics": true,
+				"tags": {
+					"Environment": "Dev",
+					"Owner": "DataGov",
+					"CostCenter": "sample-a"
+				}
+			},
+			{
+				"name": "project-sample-b",
+				"resourceId": "/subscriptions/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/resourceGroups/rg-ai-sample/providers/Microsoft.CognitiveServices/accounts/ai-sample-b/projects/project-sample-b",
+				"diagnostics": true,
+				"tags": {
+					"Environment": "Dev",
+					"Owner": "DataGov",
+					"CostCenter": "sample-b"
+				}
+			}
+		],
+		"contentSafety": {
+			"endpoint": "",
+			"apiKeySecretRef": {
+				"keyVaultResourceId": "",
+				"secretName": ""
+			},
+			"textBlocklists": [],
+			"harmSeverityThreshold": null
+		}
+	},
+	"fabric": {
+		"scanAutomationMode": "runOnly",
+		"workspaces": [
+			{
+				"name": "workspace-sample-a",
+				"workspaceId": "",
+				"workspaceUrl": "https://app.powerbi.com/groups/11111111-aaaa-bbbb-cccc-222222222222",
+				"scanName": "scan-[name]",
+				"lakehouses": [
+					{
+						"name": "bronze",
+						"sensitivityLabel": "Personal"
+					},
+					{
+						"name": "silver",
+						"sensitivityLabel": "Confidential\\All Employees"
+					}
+				]
+			},
+			{
+				"name": "workspace-sample-b",
+				"workspaceId": "33333333-4444-5555-6666-777777777777",
+				"workspaceUrl": "https://app.powerbi.com/groups/33333333-4444-5555-6666-777777777777",
+				"scanName": "scan-[name]",
+				"lakehouses": [
+					{
+						"name": "bronze",
+						"sensitivityLabel": "Public"
+					},
+					{
+						"name": "silver",
+						"sensitivityLabel": "Public"
+					},
+					{
+						"name": "gold",
+						"sensitivityLabel": "Public"
+					}
+				]
+			}
+		]
+	},
+	"logAnalyticsWorkspaceId": "88888888-9999-aaaa-bbbb-cccccccccccc",
+	"dataSources": [],
+	"scans": [],
+	"dlpPolicy": {
+		"name": "AI Egress Control",
+		"mode": "Enforce",
+		"locations": {
+			"Exchange": "All",
+			"SharePoint": "All",
+			"OneDrive": "All"
+		},
+		"rules": [
+			{
+				"name": "Block Sensitive Data to AI Destinations",
+				"sensitiveInfoTypes": [
+					{
+						"name": "Credit Card Number",
+						"count": 1,
+						"confidence": 85
+					},
+					{
+						"name": "U.S. Social Security Number (SSN)",
+						"count": 1,
+						"confidence": 85
+					}
+				],
+				"blockAccess": true,
+				"notifyUser": true
+			}
+		]
+	},
+	"labels": [
+		{
+			"name": "SemiConfidential",
+			"publishPolicyName": "Publish: Confidential",
+			"encryptionEnabled": false,
+			"publishScopes": {
+				"Exchange": "All",
+				"SharePoint": "All",
+				"OneDrive": "All"
+			}
+		}
+	],
+	"retentionPolicies": [],
+	"activityExport": null,
+	"defenderForAI": {
+		"enableDefenderForCloudPlans": [
+			"CognitiveServices",
+			"Storage",
+			"Containers"
+		],
+		"logAnalyticsWorkspaceId": "88888888-9999-aaaa-bbbb-cccccccccccc",
+		"diagnosticCategories": [
+			"Audit",
+			"RequestResponse",
+			"AllMetrics"
+		]
+	}
+}
+```
+
+---
+
 ## Core environment
 
 | Path | Type | Description | Consumed by |
@@ -39,13 +197,13 @@ Then edit `spec.local.json` with your actual Azure resource IDs and configuratio
 | `purviewResourceGroup` | string | RG containing the Purview account. | Purview scripts |
 | `purviewSubscriptionId` | string | Subscription hosting Purview (can differ from `subscriptionId`). | Purview scripts |
 
-## Azure AI / Foundry inputs
+## Microsoft Foundry inputs
 
 | Path | Type | Description | Consumed by |
 | ---- | ---- | ----------- | ----------- |
-| `aiResourceGroup` | string | Resource group that hosts Azure AI Foundry, Cognitive Services, and related assets. | Defender + Foundry scripts |
+| `aiResourceGroup` | string | Resource group that hosts Microsoft Foundry, Cognitive Services, and related assets. | Defender + Foundry scripts |
 | `aiSubscriptionId` | string | Subscription that owns those AI resources. | Defender + Foundry scripts |
-| `aiFoundry.name` | string | Canonical Azure AI Foundry project name that anchors registration flows. Used when a single “primary” project needs to be referenced. | `30-Foundry-RegisterResources.ps1`, docs |
+| `aiFoundry.name` | string | Canonical Microsoft Foundry project name that anchors registration flows. Used when a single “primary” project needs to be referenced. | `30-Foundry-RegisterResources.ps1`, docs |
 | `aiFoundry.resourceId` | string | Full resource ID for that anchor project. Provides deterministic IDs for registration and recommendation linking. | `30-Foundry-RegisterResources.ps1`, `31-Foundry-ConfigureContentSafety.ps1` |
 | `foundry.resources[]` | array of objects | Each object describes a Foundry project or Cognitive Services account the automation should manage. Add additional entries for every workspace you want tagged/monitored. | `25-Tag-ResourcesFromSpec.ps1`, `30-Foundry-RegisterResources.ps1`, `31-Foundry-ConfigureContentSafety.ps1`, `07-Enable-Diagnostics.ps1` |
 | `foundry.resources[].name` | string | Friendly name for status messages. | Logging | 
@@ -59,20 +217,29 @@ Then edit `spec.local.json` with your actual Azure resource IDs and configuratio
 
 > **Why both `aiFoundry` and `foundry.resources`?** Purview automatically discovers Foundry accounts, but the automation only touches resources explicitly listed here. `aiFoundry` gives scripts one deterministic “primary” project to reference, while `foundry.resources[]` lets you manage any number of projects (tagging, diagnostics, Content Safety) in parallel.
 
-## Fabric / OneLake preview inputs
+## Fabric workspace inputs
 
 | Path | Type | Description | Consumed by |
 | ---- | ---- | ----------- | ----------- |
-| `fabric.oneLakeRoots[]` | array | List of OneLake roots that should be registered with Purview DSPM for AI. Keep entries even while scripts 26–29 stay commented so values are ready when you enable the scans. | `26-Register-OneLake.ps1`, `28-Trigger-OneLakeScan.ps1` |
-| `fabric.oneLakeRoots[].name` | string | Friendly name that becomes the Purview data-source ID. | `26-Register-OneLake.ps1` |
-| `fabric.oneLakeRoots[].resourceId` | string | Fabric ARM resource ID for the root (for example `/providers/Microsoft.Fabric/oneLakeWorkspaces/...`). | `26-Register-OneLake.ps1` |
-| `fabric.oneLakeRoots[].scanName` | string | Name of the Purview scan definition to create/execute against that root. | `28-Trigger-OneLakeScan.ps1` |
-| `fabric.workspaces[]` | array | Fabric workspaces whose assets (lakehouses, warehouses, etc.) should be crawled. | `27-Register-FabricWorkspace.ps1`, `29-Trigger-FabricWorkspaceScan.ps1` |
-| `fabric.workspaces[].name` | string | Name/identifier used when registering the Fabric workspace in Purview. | `27-Register-FabricWorkspace.ps1` |
-| `fabric.workspaces[].resourceId` | string | `/providers/Microsoft.Fabric/workspaces/...` resource ID for the workspace. | `27-Register-FabricWorkspace.ps1` |
+| `fabric.scanAutomationMode` | string | Controls scan-definition automation behavior for Fabric workspaces. Supported values: `full` (create or update the scan definition, then run it), `runOnly` (preserve the existing Purview scan definition and only trigger it), `disabled` (skip the Fabric scan trigger step entirely). Use `runOnly` when scoped scans are managed in the Purview portal and you do not want automation to overwrite them. If an unknown value is supplied, the scripts warn and fall back to `full`. | `27-Register-FabricWorkspace.ps1`, `29-Trigger-FabricWorkspaceScan.ps1` |
+| `fabric.workspaces[]` | array | Fabric workspaces whose assets (lakehouses, warehouses, etc.) should be crawled. This flow is workspace-scoped and does not register OneLake roots. | `26-Ensure-FabricWorkspaceSensitivity.ps1`, `26-Apply-FabricLakehouseSensitivity.ps1`, `27-Register-FabricWorkspace.ps1`, `29-Trigger-FabricWorkspaceScan.ps1` |
+| `fabric.workspaces[].name` | string | Fabric workspace name. This is sufficient in most cases; the script attempts to resolve workspace GUID by name automatically. | `27-Register-FabricWorkspace.ps1` |
+| `fabric.workspaces[].resourceId` | string | Optional identifier used only as an additional input for workspace GUID resolution. It is not sent directly in the Purview datasource registration payload. This value can be an ARM-style resource ID or a Fabric workspace URL (`https://app.powerbi.com/groups/<workspaceGuid>`). | `27-Register-FabricWorkspace.ps1` |
+| `fabric.workspaces[].workspaceUrl` | string | Optional explicit Fabric workspace URL (`https://app.powerbi.com/groups/<workspaceGuid>`). Use this if name-based resolution is ambiguous or blocked by API permissions. | `27-Register-FabricWorkspace.ps1` |
+| `fabric.workspaces[].workspaceId` | string | Optional workspace GUID fallback. Use this if multiple workspaces share the same name or when API lookup is unavailable. | `27-Register-FabricWorkspace.ps1`, `29-Trigger-FabricWorkspaceScan.ps1` |
 | `fabric.workspaces[].scanName` | string | Purview scan definition name to associate with that workspace. | `29-Trigger-FabricWorkspaceScan.ps1` |
+| `fabric.workspaces[].lakehouses[]` | array | Lakehouse-level sensitivity targets for validation and application. | `26-Ensure-FabricWorkspaceSensitivity.ps1`, `26-Apply-FabricLakehouseSensitivity.ps1` |
+| `fabric.workspaces[].lakehouses[].name` | string | Lakehouse item name in the Fabric workspace. | `26-Ensure-FabricWorkspaceSensitivity.ps1`, `26-Apply-FabricLakehouseSensitivity.ps1` |
+| `fabric.workspaces[].lakehouses[].sensitivityLabel` | string | Desired sensitivity label on that lakehouse item. Use display names (for example `Public`) or parent/child display paths (for example `Confidential\All Employees`). The pre-step resolves these values to internal label identities, validates existence, and emits a target map for the apply step. | `26-Ensure-FabricWorkspaceSensitivity.ps1`, `26-Apply-FabricLakehouseSensitivity.ps1` |
 
-> **Status:** The Fabric scripts are commented out in `run.ps1` until they gracefully handle empty arrays. Populate these fields now so you can unlock Fabric scans simply by uncommenting the steps when ready.
+> **Execution order:** Label validation runs first, then label apply, then workspace registration, then workspace scan trigger. This preserves a workspace-only Purview map and avoids tenant-wide OneLake scanning.
+
+> **Label format tip:** In JSON, represent parent/child labels with escaped backslashes (for example `"Confidential\\All Employees"`).
+**Label name matching:** The `sensitivityLabel` value must match the **exact display name** shown in the Microsoft Purview compliance portal under Information protection → Labels (e.g., `General` not `General usage`). Run `Get-Label | Select-Object DisplayName` in a connected Exchange Online session to list available names. Unresolved labels are flagged at runtime and skipped during the apply step.
+
+> **Fabric label prerequisites:** The accelerator does not turn on Fabric sensitivity-labeling features at the tenant level. It expects your environment to already support Fabric sensitivity labels, the operator to have permission to call the Fabric admin labeling API, and the referenced Purview sensitivity labels to already exist and be discoverable through Exchange Online / Security & Compliance PowerShell (`Get-Label`). If those prerequisites are missing, the validation/apply steps fail or skip; they do not enable the feature for you.
+
+> **`runOnly` prerequisite:** `runOnly` assumes the named Purview Fabric scan already exists. If it does not, create it once in the Purview portal or switch temporarily to `full` so automation can create it.
 
 ## Global Content Safety configuration
 

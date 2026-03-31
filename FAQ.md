@@ -1,6 +1,6 @@
 # AI Governance & Security FAQ
 
-## When should this automation run relative to Copilot, Azure AI Foundry, or ChatGPT Enterprise onboarding?
+## When should this automation run relative to Copilot, Microsoft Foundry, or ChatGPT Enterprise onboarding?
 Run it on **Day 0**, before end-user AI workloads are deployed. Stage the scripts so Purview DSPM for AI and unified audit are enabled first, then follow immediately with Defender for AI and Foundry tagging. That guarantees telemetry and governance data flow as soon as AI apps launch.
 
 ## How can I run the scripts in stages?
@@ -35,7 +35,7 @@ Yes. `scripts/governance/dspmPurview/12-Create-DlpPolicy.ps1` uses Exchange Onli
 - Without it, M365 workloads either don't emit audit events at all or keep them locked in per-service logs, so M365 Copilot governance features (DLP, Insider Risk, eDiscovery, Communication Compliance) have nothing to reference.
 - Once enabled, the Purview compliance portal (**https://compliance.microsoft.com** → **Audit**) can search across all M365 workloads with one query, and downstream APIs (Management Activity, Office 365 Management API, Purview Audit (Premium), scripts `21-Export-Audit.ps1` / `22-Ship-AuditToStorage.ps1`) can stream those events to SIEMs, storage, or Fabric Lakehouse.
 - It's needed for M365 Copilot governance: the `m365` tag publishes DLP/labels/retention for M365 Copilot prompt/response capture.
-- **Note:** Azure AI Foundry prompts do NOT flow through Unified Audit. Foundry telemetry is captured via Azure diagnostics and Defender for AI instead.
+- **Note:** Microsoft Foundry prompts do NOT flow through Unified Audit. Foundry telemetry is captured via Azure diagnostics and Defender for AI instead.
 
 ## Why are there two `logAnalyticsWorkspaceId` fields in the spec?
 - The top-level `logAnalyticsWorkspaceId` (near the subscription/resourceGroup fields) is the “general purpose” workspace. Purview scans, tagging diagnostics, and other scripts wire telemetry here if they need a workspace and you don’t override it elsewhere.
@@ -43,13 +43,13 @@ Yes. `scripts/governance/dspmPurview/12-Create-DlpPolicy.ps1` uses Exchange Onli
 - Both fields exist so you can either reuse a single workspace or split Defender telemetry from the broader operations log stream without editing the scripts.
 
 ## Why does the spec have both `aiFoundry` and `foundry.resources` (and two Content Safety blocks)?
-- `aiFoundry` is the single “anchor” Azure AI Foundry project that scripts such as `30-Foundry-RegisterResources.ps1` expect. It provides one canonical project name/resourceId even if you only manage a single workspace.
-- `foundry.resources` is an array so you can tag/monitor multiple Cognitive Services or AI Foundry workloads. Each entry feeds `25-Tag-ResourcesFromSpec.ps1`, `31-Foundry-ConfigureContentSafety.ps1`, and similar automation. If you only have one project, you’ll see the same resource repeated just so the array isn’t empty.
+- `aiFoundry` is the single “anchor” Microsoft Foundry project that scripts such as `30-Foundry-RegisterResources.ps1` expect. It provides one canonical project name/resourceId even if you only manage a single workspace.
+- `foundry.resources` is an array so you can tag/monitor multiple Cognitive Services or Microsoft Foundry workloads. Each entry feeds `25-Tag-ResourcesFromSpec.ps1`, `31-Foundry-ConfigureContentSafety.ps1`, and similar automation. If you only have one project, you’ll see the same resource repeated just so the array isn’t empty.
 - `foundry.contentSafety` contains the Content Safety configuration that should be applied to those Foundry-linked resources (endpoint, Key Vault secret, blocklists, severity threshold).
 - The top-level `contentSafety` section is for standalone Content Safety deployments outside Foundry—for example, when you attach Content Safety to Azure OpenAI directly. Different scripts reference each block, so both remain even if some fields are empty.
 
 ## Why do I need to add every Foundry project to the spec if Purview already shows it?
-- Purview discovers Azure AI Foundry accounts on its own once Defender for Cloud plans are enabled, so new workspaces appear in the DSPM blades even if you never rerun the automation.
+- Purview discovers Microsoft Foundry accounts on its own once Defender for Cloud plans are enabled, so new workspaces appear in the DSPM blades even if you never rerun the automation.
 - The scripts only touch resources listed in `spec.local.json` (`foundry.resources[]` plus the anchor `aiFoundry`). If a workspace is missing there, rerunning `run.ps1` will skip it entirely.
 - Adding the resource name/ID unlocks the downstream automation:
 	- `25-Tag-ResourcesFromSpec.ps1` applies the governance tags defined in the spec.
@@ -61,23 +61,23 @@ Yes. `scripts/governance/dspmPurview/12-Create-DlpPolicy.ps1` uses Exchange Onli
 ## Do I need Azure diagnostics for Foundry?
 - Yes—Azure diagnostics capture logs from Foundry/OpenAI resources (API calls, request/response payload metadata, Content Safety enforcement) and send them to Log Analytics.
 - `07-Enable-Diagnostics.ps1` enables Diagnostic Settings on each Foundry/Cognitive Services resource listed in the spec and ships them to the specified Log Analytics workspace. Those logs power Defender for AI detections and give you platform-level visibility.
-- Note: Unified Audit is a separate M365 control for Teams, SharePoint, Exchange, and M365 Copilot. Azure AI Foundry prompts do NOT flow through Unified Audit—they are captured via Azure diagnostics and Defender for AI instead.
+- Note: Unified Audit is a separate M365 control for Teams, SharePoint, Exchange, and M365 Copilot. Microsoft Foundry prompts do NOT flow through Unified Audit—they are captured via Azure diagnostics and Defender for AI instead.
 
 ## How does Purview DSPM use the Foundry diagnostics stream?
-- `30-Foundry-RegisterResources.ps1` links every listed Azure AI Foundry workspace/project to its diagnostic stream so Purview knows which resource emitted which prompts and posture signals.
+- `30-Foundry-RegisterResources.ps1` links every listed Microsoft Foundry workspace/project to its diagnostic stream so Purview knows which resource emitted which prompts and posture signals.
 - `07-Enable-Diagnostics.ps1` pushes Foundry logs and metrics into Log Analytics; Defender for AI ingests those signals for threat detection (prompt injection, jailbreaks, data exfiltration).
 - With telemetry flowing, DSPM can correlate Foundry resources with sensitivity labels and raise alerts when prompts touch sensitive data or a workspace drifts from the prescribed guardrails.
 - The same telemetry flows into DSPM dashboards so auditors can prove prompts/responses were monitored via Defender for AI.
 
 ## Why does a deleted Foundry account or project still show up in DSPM for AI?
-- Microsoft Purview DSPM for AI retains historical telemetry and risk assessments so compliance teams can investigate past activity. Removing the Azure AI Foundry account/project (or deleting the subscription) stops **future** data collection, but previously captured evidence stays in the DSPM dashboard until retention policies purge it.
+- Microsoft Purview DSPM for AI retains historical telemetry and risk assessments so compliance teams can investigate past activity. Removing the Microsoft Foundry account/project (or deleting the subscription) stops **future** data collection, but previously captured evidence stays in the DSPM dashboard until retention policies purge it.
 - There is no automatic cleanup tied to account deletion because DSPM is designed for audit scenarios—erasing the record would break investigations and regulatory traceability.
 - If a name must be removed immediately, use the Purview compliance portal to adjust or purge retention: review **Data lifecycle management** policies, Communication Compliance/Insider Risk retention, or purge content under **Audit (Premium)** exports. This is a manual action; the accelerator does not issue deletions.
 - As a best practice, confirm what still appears via **Data Risk Assessment** reports and review the retention policies assigned to those workloads so stakeholders know when the historical entries will naturally expire.
 
 ## Why doesn’t `30-Foundry-RegisterResources.ps1` touch Azure OpenAI accounts?
 
-Confirming what’s happening: the only part of the accelerator that “registers a project” in Purview today is `30-Foundry-RegisterResources.ps1`, and that script only knows how to work with Azure AI Foundry projects (`…/accounts/<foundry>/projects/<project>` resource IDs). When you append an Azure OpenAI account (for example `/accounts/oai-cwydhg7zp`) to `foundry.resources[]`, the run still loops through the array, but this module deliberately ignores non-Foundry items because Purview already discovers plain Azure OpenAI accounts automatically. The end result matches what you see in the portal: the manual **Secure interactions for enterprise AI apps** toggle only surfaces for Foundry projects. As of today’s change, the script prints “Skipping non-Foundry resource” whenever it encounters an entry without the `/projects/` segment so the run log makes that behavior explicit.
+Confirming what’s happening: the only part of the accelerator that “registers a project” in Purview today is `30-Foundry-RegisterResources.ps1`, and that script only knows how to work with Microsoft Foundry projects (`…/accounts/<foundry>/projects/<project>` resource IDs). When you append an Azure OpenAI account (for example `/accounts/oai-cwydhg7zp`) to `foundry.resources[]`, the run still loops through the array, but this module deliberately ignores non-Foundry items because Purview already discovers plain Azure OpenAI accounts automatically. The end result matches what you see in the portal: the manual **Secure interactions for enterprise AI apps** toggle only surfaces for Foundry projects. As of today’s change, the script prints “Skipping non-Foundry resource” whenever it encounters an entry without the `/projects/` segment so the run log makes that behavior explicit.
 
 ## Can I run everything from azd, GitHub Actions, or another automation platform?
 - **azd hooks / GitHub Actions / Azure Automation** work for Azure resource tasks (Purview account, Defender plans, policies). Use a service principal with `Contributor` or `Security Admin` rights.
