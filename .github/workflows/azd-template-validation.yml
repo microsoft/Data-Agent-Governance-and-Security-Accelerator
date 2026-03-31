@@ -33,10 +33,6 @@ jobs:
           az account show
           echo "Azure CLI authenticated successfully"
 
-      - name: Export post-provision tags
-        run: |
-          echo "DAGA_POSTPROVISION_TAGS=${{ vars.DAGA_POSTPROVISION_TAGS || 'defender,foundry' }}" >> $GITHUB_ENV
-
       - uses: microsoft/template-validation-action@v0.4.3
         with:
           validateAzd: ${{ vars.TEMPLATE_VALIDATE_AZD }}
