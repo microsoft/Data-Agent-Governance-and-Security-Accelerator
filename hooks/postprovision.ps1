@@ -177,8 +177,12 @@ $paramTags = Get-ParamArray 'dagaTags'
 $combinedTags = New-Object 'System.Collections.Generic.List[object]'
 Add-TagSource -Target $combinedTags -Source $Tags
 $envTags = Get-Default -value $env:DAGA_POSTPROVISION_TAGS -fallback $null
-if (-not [string]::IsNullOrWhiteSpace($envTags)) { Add-TagSource -Target $combinedTags -Source $envTags }
-Add-TagSource -Target $combinedTags -Source $paramTags
+if (-not [string]::IsNullOrWhiteSpace($envTags)) {
+  # When DAGA_POSTPROVISION_TAGS is set, use it as the authoritative tag list (skip bicepparam tags).
+  Add-TagSource -Target $combinedTags -Source $envTags
+} else {
+  Add-TagSource -Target $combinedTags -Source $paramTags
+}
 $tagArray = ConvertTo-TagArray -tagInput ($combinedTags.ToArray())
 $connectM365 = $ConnectM365.IsPresent
 if (-not $connectM365 -and $env:DAGA_POSTPROVISION_CONNECT_M365) {
