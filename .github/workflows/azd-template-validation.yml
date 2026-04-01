@@ -32,8 +32,25 @@ jobs:
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Export DAGA env vars
-        run: echo "DAGA_POSTPROVISION_TAGS=${DAGA_POSTPROVISION_TAGS}" >> $GITHUB_ENV
+      - name: Override dagaTags in bicepparam
+        run: |
+          TAGS="${DAGA_POSTPROVISION_TAGS:-defender,foundry}"
+          # Build the replacement bicep array from comma-separated tags
+          BLOCK="param dagaTags = ["
+          IFS=',' read -ra TAG_ARR <<< "$TAGS"
+          for tag in "${TAG_ARR[@]}"; do
+            BLOCK="$BLOCK"$'\n'"  '${tag}'"
+          done
+          BLOCK="$BLOCK"$'\n'"]"
+          # Replace the dagaTags block in main.bicepparam
+          python3 -c "
+          import re, sys
+          text = open('infra/main.bicepparam').read()
+          text = re.sub(r'param dagaTags = \[.*?\]', sys.argv[1], text, flags=re.DOTALL)
+          open('infra/main.bicepparam','w').write(text)
+          " "$BLOCK"
+          echo "dagaTags overridden to: $TAGS"
+          head -15 infra/main.bicepparam
 
       - uses: microsoft/template-validation-action@v0.4.3
         id: validation
