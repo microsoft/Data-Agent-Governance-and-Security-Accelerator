@@ -23,6 +23,7 @@ jobs:
       AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       AZURE_DEV_COLLECT_TELEMETRY: ${{ vars.AZURE_DEV_COLLECT_TELEMETRY }}
+      DAGA_POSTPROVISION_TAGS: ${{ vars.DAGA_POSTPROVISION_TAGS }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4

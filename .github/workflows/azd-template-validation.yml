@@ -41,7 +41,7 @@ jobs:
           AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
           AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DAGA_POSTPROVISION_TAGS: ${{ vars.DAGA_POSTPROVISION_TAGS || 'defender,foundry' }}
+          DAGA_POSTPROVISION_TAGS: ${{ vars.DAGA_POSTPROVISION_TAGS }}
 
       - name: print result
         if: always()
