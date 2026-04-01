@@ -19,9 +19,7 @@ function ConvertTo-TagArray {
   param([object]$tagInput)
   $items = @()
   if ($null -eq $tagInput) {
-    # Safe default when no tags are resolved (e.g. bicep CLI not on PATH in CI).
-    # Local devs with bicep get the full list from main.bicepparam; override via DAGA_POSTPROVISION_TAGS.
-    return @('defender', 'foundry')
+    return @('foundation', 'dspm', 'defender', 'foundry')
   }
   if ($tagInput -isnot [System.Collections.IEnumerable] -or $tagInput -is [string]) {
     $tagInput = @($tagInput)
@@ -37,7 +35,7 @@ function ConvertTo-TagArray {
     $items += ($text -split '[,\s]+' | Where-Object { $_ })
   }
   if (-not $items) {
-    return @('defender','foundry')
+    return @('foundation', 'dspm', 'defender', 'foundry')
   }
   $deduped = $items | ForEach-Object { $_.Trim() } | Where-Object { $_ } | Select-Object -Unique
   return @($deduped)
@@ -88,6 +86,11 @@ function Get-BicepParameterConfig {
     $json = & $bicepCmd.Source build-params $ParamFile --stdout 2>$null
     if (-not $json) { return $bag }
     $doc = $json | ConvertFrom-Json
+    # Newer Bicep CLI wraps output as { parametersJson: "<json string>", ... }
+    $paramJsonProp = $doc.PSObject.Properties['parametersJson']
+    if ($paramJsonProp -and $paramJsonProp.Value) {
+      $doc = $paramJsonProp.Value | ConvertFrom-Json
+    }
     $parametersProp = $doc.PSObject.Properties['parameters']
     if ($parametersProp -and $parametersProp.Value) {
       foreach ($prop in $parametersProp.Value.PSObject.Properties) {
