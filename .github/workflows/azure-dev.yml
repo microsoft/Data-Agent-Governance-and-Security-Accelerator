@@ -1,9 +1,6 @@
 name: Azure Dev Deploy
 
 on:
-  push:
-    branches:
-      - psl-pk-azdtemplatevalidation
   workflow_dispatch:
 
 permissions:
