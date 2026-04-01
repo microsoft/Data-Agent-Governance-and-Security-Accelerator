@@ -17,6 +17,11 @@ jobs:
     runs-on: ubuntu-latest
     name: azd template validation
     environment: production
+    # Job-level env ensures DAGA vars are in the process environment for all steps and subprocesses.
+    env:
+      # Skips 'foundation' and 'dspm' — the SP does not have Purview subscription access yet.
+      # Restore vars.DAGA_POSTPROVISION_TAGS reference once the SP is granted Purview access.
+      DAGA_POSTPROVISION_TAGS: 'defender,foundry'
     steps:
       - uses: actions/checkout@v4
 
@@ -26,6 +31,9 @@ jobs:
           client-id: ${{ vars.AZURE_CLIENT_ID }}
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Export DAGA env vars
+        run: echo "DAGA_POSTPROVISION_TAGS=${DAGA_POSTPROVISION_TAGS}" >> $GITHUB_ENV
 
       - uses: microsoft/template-validation-action@v0.4.3
         id: validation
@@ -44,9 +52,6 @@ jobs:
           DAGA_PURVIEW_ACCOUNT: ${{ vars.PURVIEW_ACCOUNT_NAME }}
           DAGA_PURVIEW_RESOURCE_GROUP: ${{ vars.PURVIEW_RESOURCE_GROUP || vars.AZURE_RESOURCE_GROUP }}
           DAGA_PURVIEW_SUBSCRIPTION_ID: ${{ vars.PURVIEW_SUBSCRIPTION_ID || vars.AZURE_SUBSCRIPTION_ID }}
-          # Skips 'foundation' and 'dspm' — the SP does not have Purview subscription access yet.
-          # Restore vars.DAGA_POSTPROVISION_TAGS reference once the SP is granted Purview access.
-          DAGA_POSTPROVISION_TAGS: 'defender,foundry'
 
       - name: print result
         if: always()
