@@ -4,10 +4,10 @@ using './main.bicep'
 // resolved configuration to run.ps1, so no additional environment variables are required.
 param dagaSpecPath = './spec.local.json'
 param dagaTags = [
+  'foundation'
+  'dspm'
   'defender'
   'foundry'
-  // The SP does not yet have Purview subscription access, so 'foundation' and 'dspm' are excluded.
-  // Local developers: set DAGA_POSTPROVISION_TAGS=foundation,dspm,defender,foundry to run all tags.
 ]
 param dagaConnectM365 = true
 

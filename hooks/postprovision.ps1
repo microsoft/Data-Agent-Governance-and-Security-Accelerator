@@ -19,7 +19,9 @@ function ConvertTo-TagArray {
   param([object]$tagInput)
   $items = @()
   if ($null -eq $tagInput) {
-    return @('foundation', 'dspm', 'defender', 'foundry')
+    # Safe default when no tags are resolved (e.g. bicep CLI not on PATH in CI).
+    # Local devs with bicep get the full list from main.bicepparam; override via DAGA_POSTPROVISION_TAGS.
+    return @('defender', 'foundry')
   }
   if ($tagInput -isnot [System.Collections.IEnumerable] -or $tagInput -is [string]) {
     $tagInput = @($tagInput)
@@ -35,7 +37,7 @@ function ConvertTo-TagArray {
     $items += ($text -split '[,\s]+' | Where-Object { $_ })
   }
   if (-not $items) {
-    return @('foundation','dspm','defender','foundry')
+    return @('defender','foundry')
   }
   $deduped = $items | ForEach-Object { $_.Trim() } | Where-Object { $_ } | Select-Object -Unique
   return @($deduped)
