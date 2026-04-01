@@ -44,8 +44,9 @@ jobs:
           DAGA_PURVIEW_ACCOUNT: ${{ vars.PURVIEW_ACCOUNT_NAME }}
           DAGA_PURVIEW_RESOURCE_GROUP: ${{ vars.PURVIEW_RESOURCE_GROUP || vars.AZURE_RESOURCE_GROUP }}
           DAGA_PURVIEW_SUBSCRIPTION_ID: ${{ vars.PURVIEW_SUBSCRIPTION_ID || vars.AZURE_SUBSCRIPTION_ID }}
-          # Skips 'foundation' and 'dspm' by default; add them back to DAGA_POSTPROVISION_TAGS once the SP has Purview subscription access.
-          DAGA_POSTPROVISION_TAGS: ${{ vars.DAGA_POSTPROVISION_TAGS || 'defender,foundry' }}
+          # Skips 'foundation' and 'dspm' — the SP does not have Purview subscription access yet.
+          # Restore vars.DAGA_POSTPROVISION_TAGS reference once the SP is granted Purview access.
+          DAGA_POSTPROVISION_TAGS: 'defender,foundry'
 
       - name: print result
         if: always()
