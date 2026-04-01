@@ -179,12 +179,22 @@ if (-not (Test-Path -Path $specPath)) {
 }
 
 $paramTags = Get-ParamArray 'dagaTags'
-$combinedTags = New-Object 'System.Collections.Generic.List[object]'
-Add-TagSource -Target $combinedTags -Source $Tags
 $envTags = Get-Default -value $env:DAGA_POSTPROVISION_TAGS -fallback $null
-if (-not [string]::IsNullOrWhiteSpace($envTags)) { Add-TagSource -Target $combinedTags -Source $envTags }
-Add-TagSource -Target $combinedTags -Source $paramTags
-$tagArray = ConvertTo-TagArray -tagInput ($combinedTags.ToArray())
+
+# Priority chain: CLI -Tags > DAGA_POSTPROVISION_TAGS env var > bicep dagaTags param > fallback
+if ($Tags -and $Tags.Count -gt 0) {
+  $tagArray = ConvertTo-TagArray -tagInput $Tags
+  Write-Host "Using tags from CLI parameter: [$($tagArray -join ', ')]" -ForegroundColor Green
+} elseif (-not [string]::IsNullOrWhiteSpace($envTags)) {
+  $tagArray = ConvertTo-TagArray -tagInput $envTags
+  Write-Host "Using tags from DAGA_POSTPROVISION_TAGS: [$($tagArray -join ', ')]" -ForegroundColor Green
+} elseif ($paramTags -and $paramTags.Count -gt 0) {
+  $tagArray = ConvertTo-TagArray -tagInput $paramTags
+  Write-Host "Using tags from bicep parameters: [$($tagArray -join ', ')]" -ForegroundColor Green
+} else {
+  $tagArray = ConvertTo-TagArray -tagInput $null
+  Write-Host "Using default tags: [$($tagArray -join ', ')]" -ForegroundColor Green
+}
 $connectM365 = $ConnectM365.IsPresent
 if (-not $connectM365 -and $env:DAGA_POSTPROVISION_CONNECT_M365) {
   [bool]::TryParse($env:DAGA_POSTPROVISION_CONNECT_M365, [ref]$connectM365) | Out-Null
