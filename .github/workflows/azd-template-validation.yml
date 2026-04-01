@@ -20,25 +20,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Azure CLI Login
-        uses: azure/login@v2
-        with:
-          client-id: ${{ vars.AZURE_CLIENT_ID }}
-          tenant-id: ${{ vars.AZURE_TENANT_ID }}
-          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
-          enable-AzPSSession: true
-
-      - name: Verify Azure CLI Context
-        run: |
-          az account show
-          echo "Azure CLI authenticated successfully"
-
       - uses: microsoft/template-validation-action@v0.4.3
+        id: validation
         with:
           validateAzd: ${{ vars.TEMPLATE_VALIDATE_AZD }}
           validateTests: ${{ vars.TEMPLATE_VALIDATE_TESTS }}
           useDevContainer: ${{ vars.TEMPLATE_USE_DEV_CONTAINER }}
-        id: validation
         env:
           AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
           AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
@@ -54,4 +41,5 @@ jobs:
           DAGA_POSTPROVISION_TAGS: ${{ vars.DAGA_POSTPROVISION_TAGS || 'defender,foundry' }}
 
       - name: print result
+        if: always()
         run: cat ${{ steps.validation.outputs.resultFile }}
