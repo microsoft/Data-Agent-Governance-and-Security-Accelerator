@@ -57,4 +57,11 @@ jobs:
             azd env new "$AZURE_ENV_NAME" --subscription "$AZURE_SUBSCRIPTION_ID" --location "$AZURE_LOCATION" --no-prompt
           fi
           azd config set defaults.subscription "$AZURE_SUBSCRIPTION_ID"
+
+          # Propagate DAGA env vars into the azd environment so postprovision hook receives them reliably.
+          azd env set DAGA_POSTPROVISION_TAGS "$DAGA_POSTPROVISION_TAGS"
+          azd env set DAGA_PURVIEW_ACCOUNT "$DAGA_PURVIEW_ACCOUNT"
+          azd env set DAGA_PURVIEW_RESOURCE_GROUP "$DAGA_PURVIEW_RESOURCE_GROUP"
+          azd env set DAGA_PURVIEW_SUBSCRIPTION_ID "$DAGA_PURVIEW_SUBSCRIPTION_ID"
+
           azd up --no-prompt
