@@ -1,6 +1,9 @@
 name: Azure Dev Deploy
 
 on:
+  push:
+    branches:
+      - psl-pk-azdtemplatevalidation
   workflow_dispatch:
 
 permissions:
@@ -15,7 +18,6 @@ jobs:
       AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
       AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
       AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
-      AZURE_ENV_NAME: ${{ vars.AZURE_ENV_NAME }}
       AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
       AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -24,6 +26,11 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+
+      - name: Set timestamp and env name
+        run: |
+          HHMM=$(date -u +'%H%M')
+          echo "AZURE_ENV_NAME=azd-${{ vars.AZURE_ENV_NAME }}-${HHMM}" >> $GITHUB_ENV
 
       - name: Install azd
         uses: Azure/setup-azd@v2
