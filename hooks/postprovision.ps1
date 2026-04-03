@@ -41,21 +41,6 @@ function ConvertTo-TagArray {
   return @($deduped)
 }
 
-function Add-TagSource {
-  param(
-    [System.Collections.Generic.List[object]]$Target,
-    [object]$Source
-  )
-  if (-not $Target) { return }
-  if ($null -eq $Source) { return }
-  if ($Source -is [System.Collections.IEnumerable] -and $Source -isnot [string]) {
-    foreach ($item in $Source) {
-      Add-TagSource -Target $Target -Source $item
-    }
-    return
-  }
-  $Target.Add($Source) | Out-Null
-}
 
 function Restore-StrictMode {
   param([object]$PreviousValue)
@@ -181,12 +166,16 @@ if (-not (Test-Path -Path $specPath)) {
 $paramTags = Get-ParamArray 'dagaTags'
 $envTags = Get-Default -value $env:DAGA_POSTPROVISION_TAGS -fallback $null
 
+# Filter out null/whitespace entries so empty values don't short-circuit the priority chain
+$Tags = @($Tags | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+$paramTags = if ($paramTags) { @($paramTags | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }) } else { @() }
+
 # Priority chain: CLI -Tags > DAGA_POSTPROVISION_TAGS env var > bicep dagaTags param > fallback
-if ($Tags -and $Tags.Count -gt 0) {
+if ($Tags.Count -gt 0) {
   $tagArray = ConvertTo-TagArray -tagInput $Tags
 } elseif (-not [string]::IsNullOrWhiteSpace($envTags)) {
   $tagArray = ConvertTo-TagArray -tagInput $envTags
-} elseif ($paramTags -and $paramTags.Count -gt 0) {
+} elseif ($paramTags.Count -gt 0) {
   $tagArray = ConvertTo-TagArray -tagInput $paramTags
 } else {
   $tagArray = ConvertTo-TagArray -tagInput $null
