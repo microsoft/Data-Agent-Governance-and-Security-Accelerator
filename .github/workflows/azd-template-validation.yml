@@ -1,5 +1,8 @@
 name: AZD Template Validation
 on:
+  push:
+    branches:
+      - psl-pk-azdtemplatevalidation
   schedule:
     - cron: '30 1 * * 4' # Every Thursday at 7:00 AM IST (1:30 AM UTC)
   workflow_dispatch:
