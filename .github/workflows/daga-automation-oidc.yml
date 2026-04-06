@@ -5,6 +5,13 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'scripts/**/*.ps1'
+      - 'infra/**'
+      - 'hooks/**'
+      - 'run.ps1'
+      - 'azure.yaml'
+      - 'spec.*.json'
 
 permissions:
   id-token: write

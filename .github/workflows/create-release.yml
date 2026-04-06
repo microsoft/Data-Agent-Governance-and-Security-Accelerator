@@ -3,6 +3,15 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'scripts/**'
+      - 'infra/**'
+      - 'hooks/**'
+      - 'run.ps1'
+      - 'azure.yaml'
+      - 'spec.*.json'
+      - 'docs/**'
+      - '*.md'
 
 permissions:
   contents: write
