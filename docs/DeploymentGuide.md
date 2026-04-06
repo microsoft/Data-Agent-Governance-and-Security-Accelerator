@@ -237,7 +237,22 @@ See the complete [Spec Field Reference](./spec-local-reference.md) for detailed 
 
 ---
 
-## 4. Configure azd parameters (optional)
+## 4. Configure Microsoft 365 environment variables
+
+If your deployment includes Fabric sensitivity labels or M365 compliance steps, set the following `azd` environment variables so the post-provision hook can authenticate to Exchange Online:
+
+```powershell
+azd env set DAGA_POSTPROVISION_CONNECT_M365 true
+azd env set DAGA_POSTPROVISION_M365_UPN "<add-your-upn>"
+```
+
+Replace `<add-your-upn>` with your Microsoft 365 user principal name (e.g., `admin@contoso.onmicrosoft.com`).
+
+In containers or Codespaces, authentication uses device-code flow — the terminal will display a URL and code for you to open on a local browser to complete sign-in.
+
+---
+
+## 5. Configure azd parameters (optional)
 
 `infra/main.bicepparam` mirrors hook inputs. Update these values if you want `azd` to pass different tags or Microsoft 365 options to `run.ps1`:
 
@@ -257,7 +272,7 @@ Environment variables (`DAGA_SPEC_PATH`, `DAGA_POSTPROVISION_TAGS`, etc.) overri
 
 ---
 
-## 5. Install AZ modules (Optional)
+## 6. Install AZ modules (Optional)
 
 If you don't have the required Azure PowerShell modules installed, run the following commands to install them:
 
@@ -279,7 +294,7 @@ These modules enable the PowerShell automation scripts to interact with Azure se
 
 ---
 
-## 6. Deploy with `azd up`
+## 7. Deploy with `azd up`
 
 ```powershell
 azd up
@@ -299,7 +314,7 @@ Run `./run.ps1 -Tags m365 -ConnectM365 -M365UserPrincipalName <upn>` from a work
 
 ---
 
-## 7. Post-deployment actions
+## 8. Post-deployment actions
 
 1. **Purview portal toggles** – enable *Secure interactions for enterprise AI apps* in the Purview portal (Data Security Posture Management for AI > Recommendations).
 2. **Role assignments** – ensure the operator account has the Audit Reader (or Compliance Administrator) role before running the audit export scripts.
@@ -313,7 +328,7 @@ For a portal-by-portal validation checklist after provisioning, see [Post-Provis
 
 ---
 
-## 8. Next steps
+## 9. Next steps
 
 - Customize the spec for additional Foundry projects or Fabric workspaces.
 - Integrate the accelerator into CI/CD by invoking `run.ps1` from GitHub Actions or Azure DevOps.
