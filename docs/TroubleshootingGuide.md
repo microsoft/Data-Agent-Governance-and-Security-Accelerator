@@ -13,7 +13,7 @@ Use this guide to resolve common issues when running the Data Agent Governance a
 | \"Cannot find property 'tenantId'\" | Your spec.local.json has invalid JSON syntax - validate with `Get-Content ./spec.local.json | ConvertFrom-Json` |
 | Scripts skip with \"No X configured\" | The corresponding spec section is empty/missing - this is OK if you don't need that feature |
 | \"Authorization denied\" on audit exports | You need Audit Reader or Compliance Administrator role in Purview |
-| Exchange Online commands fail | Run `m365` tag from desktop with MFA, not from containers/Codespaces |
+| Exchange Online commands fail | `Connect-ExchangeOnline` now uses device-code flow (`-Device`) so it works in containers/Codespaces. Open the URL printed in the terminal on a local browser and enter the code to authenticate |
 
 ---
 

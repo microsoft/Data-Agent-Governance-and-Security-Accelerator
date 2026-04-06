@@ -41,7 +41,7 @@ Gather this information before configuring your spec file:
 - [ ] **Purview Data Security AI Content Viewer** role for accessing AI prompts
 - [ ] **Microsoft 365 E5 or E5 Compliance license** (for m365 tag)
 - [ ] **Compliance Administrator** role in Microsoft 365 (for Unified Audit and DLP)
-- [ ] **Exchange Online admin** access from MFA-capable workstation (for m365 tag)
+- [ ] **Exchange Online admin** access with MFA (for m365 tag). In containers/Codespaces, device-code flow is used — open the URL shown in the terminal on a local browser to authenticate
 
 ---
 
