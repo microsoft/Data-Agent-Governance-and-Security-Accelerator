@@ -16,7 +16,7 @@ param dagaConnectM365 = true
 
 // Interactive Microsoft 365 auth for the m365 workflow.
 // Use this when an operator can complete browser-based sign-in and MFA.
-param dagaM365UserPrincipalName = 'v-saswatoc@MngEnvMCAP993385.onmicrosoft.com'
+param dagaM365UserPrincipalName = ''
 
 // App-only Microsoft 365 auth for the m365 workflow.
 // These are NOT used for Azure deployment itself. They are only passed to run.ps1
