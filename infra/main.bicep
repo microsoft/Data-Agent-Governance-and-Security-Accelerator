@@ -1,5 +1,8 @@
 targetScope = 'subscription'
 
+@description('Name of the azd environment (auto-populated by azd).')
+param environmentName string
+
 @description('Deployment location for the no-op bootstrap deployment used to satisfy azd infrastructure validation.')
 param deploymentLocation string = deployment().location
 
@@ -38,7 +41,7 @@ param dagaM365CertificatePassword string = ''
 // azd preflight rejects an ARM template with zero resources. This nested deployment is intentionally
 // inert and exists only so azd can validate and invoke the post-provision hook-driven automation.
 resource bootstrapNoOp 'Microsoft.Resources/deployments@2024-03-01' = {
-	name: 'daga-bootstrap-noop'
+	name: 'daga-bootstrap-noop-${environmentName}'
 	location: deploymentLocation
 	properties: {
 		mode: 'Incremental'

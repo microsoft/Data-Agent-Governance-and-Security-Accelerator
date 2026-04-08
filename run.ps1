@@ -231,7 +231,7 @@ foreach ($step in $selected) {
       $useInteractiveM365 = -not [string]::IsNullOrWhiteSpace($M365UserPrincipalName)
       if ($useInteractiveM365) {
         Write-Host "Connecting to Exchange Online for compliance cmdlets..." -ForegroundColor Cyan
-        Connect-ExchangeOnline -UserPrincipalName $M365UserPrincipalName -ShowBanner:$false -CommandName $exoCmds | Out-Null
+        Connect-ExchangeOnline -UserPrincipalName $M365UserPrincipalName -ShowBanner:$false -CommandName $exoCmds -Device | Out-Null
         Write-Host "Connecting to Security & Compliance PowerShell..." -ForegroundColor Cyan
         Connect-IPPSSession -UserPrincipalName $M365UserPrincipalName -ShowBanner:$false | Out-Null
       } else {
