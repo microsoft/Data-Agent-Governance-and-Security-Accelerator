@@ -1,6 +1,10 @@
 name: Azure Dev Deploy
 
 on:
+  push:
+    branches:
+      - main
+      - psl-worflows
   workflow_dispatch:
 
 permissions:

@@ -168,7 +168,7 @@ $envTags = Get-Default -value $env:DAGA_POSTPROVISION_TAGS -fallback $null
 
 # Filter out null/whitespace entries so empty values don't short-circuit the priority chain
 $Tags = @($Tags | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
-$paramTags = if ($paramTags) { @($paramTags | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }) } else { @() }
+$paramTags = @(if ($paramTags) { $paramTags | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } })
 
 # Priority chain: CLI -Tags > DAGA_POSTPROVISION_TAGS env var > bicep dagaTags param > fallback
 if ($Tags.Count -gt 0) {
