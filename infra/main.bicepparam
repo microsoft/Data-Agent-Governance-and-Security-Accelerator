@@ -1,5 +1,8 @@
 using './main.bicep'
 
+// Auto-populated by azd from the current environment name.
+param environmentName = readEnvironmentVariable('AZURE_ENV_NAME', 'default')
+
 // Customize these values per azd environment. The hook reads them and forwards the
 // resolved configuration to run.ps1, so no additional environment variables are required.
 param dagaSpecPath = './spec.local.json'
