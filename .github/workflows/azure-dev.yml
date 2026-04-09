@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - psl-workflows
+
   workflow_dispatch:
 
 permissions:
