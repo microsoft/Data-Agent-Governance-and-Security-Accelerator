@@ -138,6 +138,11 @@ function Import-AzdLoginContext {
   $rmToken = az account get-access-token --resource https://management.azure.com/ --output json | ConvertFrom-Json
   $graphToken = az account get-access-token --resource https://graph.microsoft.com/ --output json | ConvertFrom-Json
 
+  # Auto-install Az.Accounts if not available (e.g. devcontainer / CI environments)
+  if (-not (Get-Module -ListAvailable -Name Az.Accounts -ErrorAction SilentlyContinue)) {
+    Write-Host "Installing PowerShell module 'Az.Accounts'..." -ForegroundColor Cyan
+    Install-Module -Name Az.Accounts -Scope CurrentUser -Force -AllowClobber -AcceptLicense -Confirm:$false
+  }
   Import-Module Az.Accounts -ErrorAction Stop | Out-Null
 
   $connectParams = @{

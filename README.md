@@ -60,6 +60,15 @@ This accelerator orchestrates Azure and Microsoft 365 governance artifacts throu
 - Governs Microsoft Foundry projects with Azure Policy, Defender for Cloud, diagnostics, tagging, and Content Safety controls
 - Ships telemetry to Log Analytics and exports auditable evidence for downstream teams
 
+## Features
+
+- **Spec-driven DSPM for AI enablement** — Use `spec.local.json` to drive Purview onboarding, scans, policies, tagging, and evidence export
+- **Cross-cloud posture telemetry** — Stream diagnostics to Log Analytics and connect Defender for AI telemetry with governance workflows
+- **Microsoft Foundry governance** — Apply Azure Policy, Defender for Cloud, diagnostics, tagging, and Content Safety controls to Foundry resources
+- **Fabric sensitivity labels** — Configure and apply sensitivity labels to Fabric lakehouse and workspace assets
+- **CI and desktop friendly automation** — Run `azd up` for the standard path or `run.ps1` for narrower or replayable execution
+- **Extensible evidence exports** — Reuse audit export, compliance inventory, and tagging flows for downstream regulator or SIEM scenarios
+
 ## Getting Started
 
 ## <img src="./docs/images/readme/quick-deploy.png" width="48" alt="Quick Deploy" /> Quick deploy
