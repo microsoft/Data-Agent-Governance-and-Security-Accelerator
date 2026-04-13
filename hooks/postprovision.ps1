@@ -146,9 +146,6 @@ function Import-AzdLoginContext {
   $highestInstalledAzAccounts = $installedAzAccounts | Select-Object -First 1
 
   if (-not $highestInstalledAzAccounts -or $highestInstalledAzAccounts.Version -lt $requiredAzAccountsVersion) {
-    # Write-Host is intentional here — this is a user-facing provisioning hook, not a library.
-    # PSScriptAnalyzer's PSAvoidUsingWriteHost does not apply; Write-Output would pollute the
-    # pipeline and Write-Information loses -ForegroundColor support.
     Write-Host "Installing PowerShell module 'Az.Accounts' version $requiredAzAccountsVersion or later..." -ForegroundColor Cyan
     Install-Module -Name Az.Accounts -MinimumVersion $requiredAzAccountsVersion -Scope CurrentUser -Force -AllowClobber -AcceptLicense -Confirm:$false
   }
