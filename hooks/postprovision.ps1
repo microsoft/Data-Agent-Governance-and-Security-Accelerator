@@ -138,12 +138,21 @@ function Import-AzdLoginContext {
   $rmToken = az account get-access-token --resource https://management.azure.com/ --output json | ConvertFrom-Json
   $graphToken = az account get-access-token --resource https://graph.microsoft.com/ --output json | ConvertFrom-Json
 
-  # Auto-install Az.Accounts if not available (e.g. devcontainer / CI environments)
-  if (-not (Get-Module -ListAvailable -Name Az.Accounts -ErrorAction SilentlyContinue)) {
-    Write-Host "Installing PowerShell module 'Az.Accounts'..." -ForegroundColor Cyan
-    Install-Module -Name Az.Accounts -Scope CurrentUser -Force -AllowClobber -AcceptLicense -Confirm:$false
+  # Auto-install or upgrade Az.Accounts if the required version is not available (e.g. devcontainer / CI environments)
+  # Note: MinimumVersion kept in sync with run.ps1's module spec to avoid silent version drift.
+  $requiredAzAccountsVersion = [Version]'5.0.0'
+  $installedAzAccounts = Get-Module -ListAvailable -Name Az.Accounts -ErrorAction SilentlyContinue |
+    Sort-Object Version -Descending
+  $highestInstalledAzAccounts = $installedAzAccounts | Select-Object -First 1
+
+  if (-not $highestInstalledAzAccounts -or $highestInstalledAzAccounts.Version -lt $requiredAzAccountsVersion) {
+    # Write-Host is intentional here — this is a user-facing provisioning hook, not a library.
+    # PSScriptAnalyzer's PSAvoidUsingWriteHost does not apply; Write-Output would pollute the
+    # pipeline and Write-Information loses -ForegroundColor support.
+    Write-Host "Installing PowerShell module 'Az.Accounts' version $requiredAzAccountsVersion or later..." -ForegroundColor Cyan
+    Install-Module -Name Az.Accounts -MinimumVersion $requiredAzAccountsVersion -Scope CurrentUser -Force -AllowClobber -AcceptLicense -Confirm:$false
   }
-  Import-Module Az.Accounts -ErrorAction Stop | Out-Null
+  Import-Module Az.Accounts -MinimumVersion $requiredAzAccountsVersion -ErrorAction Stop | Out-Null
 
   $connectParams = @{
     AccessToken    = $rmToken.accessToken
