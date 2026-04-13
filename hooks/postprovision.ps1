@@ -138,6 +138,17 @@ function Import-AzdLoginContext {
   $rmToken = az account get-access-token --resource https://management.azure.com/ --output json | ConvertFrom-Json
   $graphToken = az account get-access-token --resource https://graph.microsoft.com/ --output json | ConvertFrom-Json
 
+  # Ensure PSGallery is registered and trusted (matches run.ps1 bootstrap logic)
+  try {
+    $gallery = Get-PSRepository -Name PSGallery -ErrorAction Stop
+    if ($gallery.InstallationPolicy -ne "Trusted") {
+      Set-PSRepository -Name PSGallery -InstallationPolicy Trusted -ErrorAction Stop
+      Write-Host "Trusted PSGallery for module installs." -ForegroundColor DarkGray
+    }
+  } catch {
+    Write-Warning "Unable to update PSGallery trust settings: $($_.Exception.Message)"
+  }
+
   # Auto-install or upgrade Az.Accounts if the required version is not available (e.g. devcontainer / CI environments)
   # Note: MinimumVersion kept in sync with run.ps1's module spec to avoid silent version drift.
   $requiredAzAccountsVersion = [Version]'5.0.0'
@@ -146,10 +157,18 @@ function Import-AzdLoginContext {
   $highestInstalledAzAccounts = $installedAzAccounts | Select-Object -First 1
 
   if (-not $highestInstalledAzAccounts -or $highestInstalledAzAccounts.Version -lt $requiredAzAccountsVersion) {
+    # Write-Host is intentional — user-facing provisioning hook, not a library.
+    # Write-Output would pollute the pipeline; Write-Information loses -ForegroundColor.
     Write-Host "Installing PowerShell module 'Az.Accounts' version $requiredAzAccountsVersion or later..." -ForegroundColor Cyan
     Install-Module -Name Az.Accounts -MinimumVersion $requiredAzAccountsVersion -Scope CurrentUser -Force -AllowClobber -AcceptLicense -Confirm:$false
   }
-  Import-Module Az.Accounts -MinimumVersion $requiredAzAccountsVersion -ErrorAction Stop | Out-Null
+
+  # Remove stale loaded module so Import-Module honours -MinimumVersion
+  $loadedAzAccounts = Get-Module -Name Az.Accounts -ErrorAction SilentlyContinue
+  if ($loadedAzAccounts -and $loadedAzAccounts.Version -lt $requiredAzAccountsVersion) {
+    Remove-Module Az.Accounts -Force -ErrorAction Stop
+  }
+  Import-Module Az.Accounts -MinimumVersion $requiredAzAccountsVersion -Force -ErrorAction Stop | Out-Null
 
   $connectParams = @{
     AccessToken    = $rmToken.accessToken
