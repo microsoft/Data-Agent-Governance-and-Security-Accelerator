@@ -35,27 +35,12 @@ function ConvertTo-TagArray {
     $items += ($text -split '[,\s]+' | Where-Object { $_ })
   }
   if (-not $items) {
-    return @('foundation','dspm','defender','foundry')
+    return @('foundation', 'dspm', 'defender', 'foundry')
   }
   $deduped = $items | ForEach-Object { $_.Trim() } | Where-Object { $_ } | Select-Object -Unique
   return @($deduped)
 }
 
-function Add-TagSource {
-  param(
-    [System.Collections.Generic.List[object]]$Target,
-    [object]$Source
-  )
-  if (-not $Target) { return }
-  if ($null -eq $Source) { return }
-  if ($Source -is [System.Collections.IEnumerable] -and $Source -isnot [string]) {
-    foreach ($item in $Source) {
-      Add-TagSource -Target $Target -Source $item
-    }
-    return
-  }
-  $Target.Add($Source) | Out-Null
-}
 
 function Restore-StrictMode {
   param([object]$PreviousValue)
@@ -86,6 +71,11 @@ function Get-BicepParameterConfig {
     $json = & $bicepCmd.Source build-params $ParamFile --stdout 2>$null
     if (-not $json) { return $bag }
     $doc = $json | ConvertFrom-Json
+    # Newer Bicep CLI wraps output as { parametersJson: "<json string>", ... }
+    $paramJsonProp = $doc.PSObject.Properties['parametersJson']
+    if ($paramJsonProp -and $paramJsonProp.Value) {
+      $doc = $paramJsonProp.Value | ConvertFrom-Json
+    }
     $parametersProp = $doc.PSObject.Properties['parameters']
     if ($parametersProp -and $parametersProp.Value) {
       foreach ($prop in $parametersProp.Value.PSObject.Properties) {
@@ -174,12 +164,22 @@ if (-not (Test-Path -Path $specPath)) {
 }
 
 $paramTags = Get-ParamArray 'dagaTags'
-$combinedTags = New-Object 'System.Collections.Generic.List[object]'
-Add-TagSource -Target $combinedTags -Source $Tags
 $envTags = Get-Default -value $env:DAGA_POSTPROVISION_TAGS -fallback $null
-if (-not [string]::IsNullOrWhiteSpace($envTags)) { Add-TagSource -Target $combinedTags -Source $envTags }
-Add-TagSource -Target $combinedTags -Source $paramTags
-$tagArray = ConvertTo-TagArray -tagInput ($combinedTags.ToArray())
+
+# Filter out null/whitespace entries so empty values don't short-circuit the priority chain
+$Tags = @($Tags | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+$paramTags = @(if ($paramTags) { $paramTags | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } })
+
+# Priority chain: CLI -Tags > DAGA_POSTPROVISION_TAGS env var > bicep dagaTags param > fallback
+if ($Tags.Count -gt 0) {
+  $tagArray = ConvertTo-TagArray -tagInput $Tags
+} elseif (-not [string]::IsNullOrWhiteSpace($envTags)) {
+  $tagArray = ConvertTo-TagArray -tagInput $envTags
+} elseif ($paramTags.Count -gt 0) {
+  $tagArray = ConvertTo-TagArray -tagInput $paramTags
+} else {
+  $tagArray = ConvertTo-TagArray -tagInput $null
+}
 $connectM365 = $ConnectM365.IsPresent
 if (-not $connectM365 -and $env:DAGA_POSTPROVISION_CONNECT_M365) {
   [bool]::TryParse($env:DAGA_POSTPROVISION_CONNECT_M365, [ref]$connectM365) | Out-Null
