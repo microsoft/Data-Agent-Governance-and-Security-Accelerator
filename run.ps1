@@ -265,37 +265,39 @@ foreach ($step in $selected) {
         if ($useCommandName) { $exoParams['CommandName'] = $exoCmds }
         Connect-ExchangeOnline @exoParams | Out-Null
         Write-Host "Connecting to Security & Compliance PowerShell..." -ForegroundColor Cyan
-        $ippsParams = @{ UserPrincipalName = $M365UserPrincipalName; ShowBanner = $false }
-        if (-not $useCommandName -and (Get-Command Connect-IPPSSession).Parameters.ContainsKey('UseRPSSession')) {
-          $ippsParams['UseRPSSession'] = $false
-        }
-        try {
-          Connect-IPPSSession @ippsParams
-        } catch {
-          Write-Warning "Initial IPPS connection failed: $($_.Exception.Message)"
-        }
-
-        # On headless Linux (e.g. Codespace), browser auth may silently fail.
-        # Fall back to az CLI access token if compliance cmdlets aren't loaded.
-        if (-not (Get-Command Get-Label -ErrorAction SilentlyContinue) -and (Get-Command az -ErrorAction SilentlyContinue)) {
-          Write-Host "Compliance cmdlets not available; retrying with az CLI access token..." -ForegroundColor Yellow
-          $ippsTokenParams = @{ ShowBanner = $false }
-          if ((Get-Command Connect-IPPSSession).Parameters.ContainsKey('UseRPSSession')) {
-            $ippsTokenParams['UseRPSSession'] = $false
-          }
-          $tokenOk = $false
-          foreach ($resource in @('https://ps.compliance.protection.outlook.com/','https://outlook.office365.com/')) {
-            try {
-              $tok = (az account get-access-token --resource $resource --query accessToken -o tsv 2>$null)
-              if ($tok -and (Get-Command Connect-IPPSSession).Parameters.ContainsKey('AccessToken')) {
-                $ippsTokenParams['AccessToken'] = $tok
-                Connect-IPPSSession @ippsTokenParams
-                if (Get-Command Get-Label -ErrorAction SilentlyContinue) { $tokenOk = $true; break }
+        if ($useCommandName) {
+          # Windows PS 5.1 path — standard browser auth works
+          Connect-IPPSSession -UserPrincipalName $M365UserPrincipalName -ShowBanner:$false | Out-Null
+        } else {
+          # Headless Linux (Codespace): browser auth fails silently for IPPS.
+          # Do a manual OAuth device code flow to get a compliance access token,
+          # then pass it via -AccessToken.
+          $complianceScope = 'https://ps.compliance.protection.outlook.com/.default offline_access'
+          $clientId = 'fb78d390-0c51-40cd-8e17-fdbfab77d9c3'  # EXO PowerShell public client
+          $deviceCodeBody = @{ client_id = $clientId; scope = $complianceScope }
+          try {
+            $deviceResp = Invoke-RestMethod -Method POST -Uri 'https://login.microsoftonline.com/organizations/oauth2/v2.0/devicecode' -Body $deviceCodeBody
+            Write-Host $deviceResp.message -ForegroundColor Yellow
+            $tokenBody = @{ client_id = $clientId; grant_type = 'urn:ietf:params:oauth:grant-type:device_code'; device_code = $deviceResp.device_code }
+            $deadline = (Get-Date).AddSeconds($deviceResp.expires_in)
+            $complianceToken = $null
+            while ((Get-Date) -lt $deadline) {
+              Start-Sleep -Seconds $deviceResp.interval
+              try {
+                $tokenResp = Invoke-RestMethod -Method POST -Uri 'https://login.microsoftonline.com/organizations/oauth2/v2.0/token' -Body $tokenBody
+                $complianceToken = $tokenResp.access_token
+                break
+              } catch {
+                $errMsg = $_.ErrorDetails.Message | ConvertFrom-Json -ErrorAction SilentlyContinue
+                if ($errMsg.error -eq 'authorization_pending') { continue }
+                throw
               }
-            } catch { continue }
-          }
-          if (-not $tokenOk) {
-            Write-Warning "Unable to load compliance cmdlets (Get-Label). Compliance steps that need labels may fail."
+            }
+            if (-not $complianceToken) { throw "Device code expired before authentication completed." }
+            Connect-IPPSSession -AccessToken $complianceToken -ShowBanner:$false | Out-Null
+          } catch {
+            Write-Warning "Compliance (IPPS) connection failed: $($_.Exception.Message)"
+            Write-Warning "Compliance steps that require Get-Label may fail."
           }
         }
       } else {
@@ -325,9 +327,7 @@ foreach ($step in $selected) {
         foreach ($key in $appExchangeParams.Keys) {
           if ($key -ne 'ShowBanner') { $appIPPSParams[$key] = $appExchangeParams[$key] }
         }
-        if (-not $useCommandName -and (Get-Command Connect-IPPSSession).Parameters.ContainsKey('UseRPSSession')) {
-          $appIPPSParams['UseRPSSession'] = $false
-        }
+        Connect-IPPSSession @appIPPSParams | Out-Null
         Connect-IPPSSession @appIPPSParams | Out-Null
       }
       $exoSessionEstablished = $true
