@@ -87,7 +87,7 @@ function Initialize-AutomationEnvironment {
     @{ Name = "Az.OperationalInsights"; MinimumVersion = $null }
   )
   if ($RequireExchange) {
-    $moduleSpecs += @{ Name = "ExchangeOnlineManagement"; MinimumVersion = $null }
+    $moduleSpecs += @{ Name = "ExchangeOnlineManagement"; MinimumVersion = "3.2.0" }
   }
 
   foreach ($module in $moduleSpecs) {
@@ -266,7 +266,9 @@ foreach ($step in $selected) {
         Connect-ExchangeOnline @exoParams | Out-Null
         Write-Host "Connecting to Security & Compliance PowerShell..." -ForegroundColor Cyan
         $ippsParams = @{ UserPrincipalName = $M365UserPrincipalName; ShowBanner = $false }
-        if (-not $useCommandName) { $ippsParams['UseRPSSession'] = $false }
+        if (-not $useCommandName -and (Get-Command Connect-IPPSSession).Parameters.ContainsKey('UseRPSSession')) {
+          $ippsParams['UseRPSSession'] = $false
+        }
         Connect-IPPSSession @ippsParams | Out-Null
       } else {
         if (-not $M365AppId -or -not $M365Organization) {
@@ -295,7 +297,9 @@ foreach ($step in $selected) {
         foreach ($key in $appExchangeParams.Keys) {
           if ($key -ne 'ShowBanner') { $appIPPSParams[$key] = $appExchangeParams[$key] }
         }
-        if (-not $useCommandName) { $appIPPSParams['UseRPSSession'] = $false }
+        if (-not $useCommandName -and (Get-Command Connect-IPPSSession).Parameters.ContainsKey('UseRPSSession')) {
+          $appIPPSParams['UseRPSSession'] = $false
+        }
         Connect-IPPSSession @appIPPSParams | Out-Null
       }
       $exoSessionEstablished = $true
