@@ -270,44 +270,25 @@ foreach ($step in $selected) {
           Connect-IPPSSession -UserPrincipalName $M365UserPrincipalName -ShowBanner:$false | Out-Null
         } else {
           # Headless Linux (Codespace): browser auth fails silently for IPPS.
-          # Do a manual OAuth device code flow to get a compliance access token,
-          # then pass it via -AccessToken.
-          $clientId = 'fb78d390-0c51-40cd-8e17-fdbfab77d9c3'  # EXO PowerShell public client
-          # Resolve tenant from UPN domain or az CLI (required — /common doesn't work)
-          $tenantId = $null
-          if ($M365UserPrincipalName -match '@(.+)$') { $tenantId = $Matches[1] }
-          if (-not $tenantId -and (Get-Command az -ErrorAction SilentlyContinue)) {
-            $tenantId = (az account show --query tenantId -o tsv 2>$null)
-          }
-          if (-not $tenantId) { $tenantId = 'organizations' }
+          # Use the MSAL library bundled with the EXO module to do device code
+          # flow for the compliance endpoint, then pass the token via -AccessToken.
           $complianceToken = $null
-          foreach ($resource in @('https://outlook.office365.com','https://ps.compliance.protection.outlook.com')) {
-            $deviceCodeBody = @{ client_id = $clientId; resource = $resource }
-            try {
-              $deviceResp = Invoke-RestMethod -Method POST -Uri "https://login.microsoftonline.com/$tenantId/oauth2/devicecode" -Body $deviceCodeBody
-              Write-Host $deviceResp.message -ForegroundColor Yellow
-              $tokenBody = @{ client_id = $clientId; grant_type = 'urn:ietf:params:oauth:grant-type:device_code'; code = $deviceResp.device_code }
-              $deadline = (Get-Date).AddSeconds($deviceResp.expires_in)
-              while ((Get-Date) -lt $deadline) {
-                Start-Sleep -Seconds $deviceResp.interval
-                try {
-                  $tokenResp = Invoke-RestMethod -Method POST -Uri "https://login.microsoftonline.com/$tenantId/oauth2/token" -Body $tokenBody
-                  $complianceToken = $tokenResp.access_token
-                  break
-                } catch {
-                  $errBody = $null
-                  try { $errBody = $_.ErrorDetails.Message | ConvertFrom-Json } catch {}
-                  if ($errBody.error -eq 'authorization_pending') { continue }
-                  throw
-                }
-              }
-              if ($complianceToken) { break }
-            } catch {
-              Write-Host "Device code for resource '$resource' failed: $($_.Exception.Message)" -ForegroundColor DarkGray
-              $errDetail = $null
-              try { $errDetail = $_.ErrorDetails.Message } catch {}
-              if ($errDetail) { Write-Host "  Detail: $errDetail" -ForegroundColor DarkGray }
+          try {
+            $exoMod = Get-Module ExchangeOnlineManagement -ErrorAction Stop
+            $msalDll = Get-ChildItem $exoMod.ModuleBase -Filter 'Microsoft.Identity.Client.dll' -Recurse -ErrorAction Stop | Select-Object -First 1
+            if (-not $msalDll) { throw "MSAL library not found in EXO module." }
+            Add-Type -Path $msalDll.FullName -ErrorAction Stop
+            $app = [Microsoft.Identity.Client.PublicClientApplicationBuilder]::Create('fb78d390-0c51-40cd-8e17-fdbfab77d9c3').WithAuthority('https://login.microsoftonline.com/organizations').Build()
+            $scopes = [string[]]@('https://ps.compliance.protection.outlook.com/.default')
+            $callback = [System.Func[Microsoft.Identity.Client.DeviceCodeResult, System.Threading.Tasks.Task]] {
+              param($dcr)
+              Write-Host $dcr.Message -ForegroundColor Yellow
+              return [System.Threading.Tasks.Task]::CompletedTask
             }
+            $result = $app.AcquireTokenWithDeviceCode($scopes, $callback).ExecuteAsync().GetAwaiter().GetResult()
+            $complianceToken = $result.AccessToken
+          } catch {
+            Write-Warning "MSAL device code flow failed: $($_.Exception.Message)"
           }
           if ($complianceToken) {
             Connect-IPPSSession -AccessToken $complianceToken -ShowBanner:$false | Out-Null
