@@ -15,7 +15,7 @@ param(
 # --- PS 7 → Windows PowerShell 5.1 re-launch for M365/EXO compatibility ---
 # Connect-ExchangeOnline -CommandName uses WinRM implicit remoting, which is
 # broken on PowerShell 7.  Re-launch under powershell.exe (5.1) when needed.
-if ($ConnectM365 -and $PSVersionTable.PSVersion.Major -ge 7) {
+if ($ConnectM365 -and $PSVersionTable.PSVersion.Major -ge 7 -and $IsWindows) {
   $ps51 = Join-Path $env:SystemRoot "System32\WindowsPowerShell\v1.0\powershell.exe"
   if (-not (Test-Path $ps51)) {
     throw "Windows PowerShell 5.1 is required for M365 connectivity but was not found."
