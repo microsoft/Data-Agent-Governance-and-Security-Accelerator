@@ -265,7 +265,9 @@ foreach ($step in $selected) {
         if ($useCommandName) { $exoParams['CommandName'] = $exoCmds }
         Connect-ExchangeOnline @exoParams | Out-Null
         Write-Host "Connecting to Security & Compliance PowerShell..." -ForegroundColor Cyan
-        Connect-IPPSSession -UserPrincipalName $M365UserPrincipalName -ShowBanner:$false | Out-Null
+        $ippsParams = @{ UserPrincipalName = $M365UserPrincipalName; ShowBanner = $false }
+        if (-not $useCommandName) { $ippsParams['UseRPSSession'] = $false }
+        Connect-IPPSSession @ippsParams | Out-Null
       } else {
         if (-not $M365AppId -or -not $M365Organization) {
           throw "Provide either -M365UserPrincipalName for interactive auth or -M365AppId/-M365Organization plus certificate details for app-only connections."
@@ -293,6 +295,7 @@ foreach ($step in $selected) {
         foreach ($key in $appExchangeParams.Keys) {
           if ($key -ne 'ShowBanner') { $appIPPSParams[$key] = $appExchangeParams[$key] }
         }
+        if (-not $useCommandName) { $appIPPSParams['UseRPSSession'] = $false }
         Connect-IPPSSession @appIPPSParams | Out-Null
       }
       $exoSessionEstablished = $true
