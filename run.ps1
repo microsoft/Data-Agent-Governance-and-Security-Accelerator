@@ -273,19 +273,25 @@ foreach ($step in $selected) {
           # Do a manual OAuth device code flow to get a compliance access token,
           # then pass it via -AccessToken.
           $clientId = 'fb78d390-0c51-40cd-8e17-fdbfab77d9c3'  # EXO PowerShell public client
+          # Resolve tenant from UPN domain or az CLI (required — /common doesn't work)
+          $tenantId = $null
+          if ($M365UserPrincipalName -match '@(.+)$') { $tenantId = $Matches[1] }
+          if (-not $tenantId -and (Get-Command az -ErrorAction SilentlyContinue)) {
+            $tenantId = (az account show --query tenantId -o tsv 2>$null)
+          }
+          if (-not $tenantId) { $tenantId = 'organizations' }
           $complianceToken = $null
-          # Try multiple resource URLs — the EXO client may only support certain audiences
           foreach ($resource in @('https://outlook.office365.com','https://ps.compliance.protection.outlook.com')) {
             $deviceCodeBody = @{ client_id = $clientId; resource = $resource }
             try {
-              $deviceResp = Invoke-RestMethod -Method POST -Uri 'https://login.microsoftonline.com/common/oauth2/devicecode' -Body $deviceCodeBody
+              $deviceResp = Invoke-RestMethod -Method POST -Uri "https://login.microsoftonline.com/$tenantId/oauth2/devicecode" -Body $deviceCodeBody
               Write-Host $deviceResp.message -ForegroundColor Yellow
               $tokenBody = @{ client_id = $clientId; grant_type = 'urn:ietf:params:oauth:grant-type:device_code'; code = $deviceResp.device_code }
               $deadline = (Get-Date).AddSeconds($deviceResp.expires_in)
               while ((Get-Date) -lt $deadline) {
                 Start-Sleep -Seconds $deviceResp.interval
                 try {
-                  $tokenResp = Invoke-RestMethod -Method POST -Uri 'https://login.microsoftonline.com/common/oauth2/token' -Body $tokenBody
+                  $tokenResp = Invoke-RestMethod -Method POST -Uri "https://login.microsoftonline.com/$tenantId/oauth2/token" -Body $tokenBody
                   $complianceToken = $tokenResp.access_token
                   break
                 } catch {
