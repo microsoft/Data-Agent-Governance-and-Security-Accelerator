@@ -272,24 +272,25 @@ foreach ($step in $selected) {
           # Headless Linux (Codespace): browser auth fails silently for IPPS.
           # Do a manual OAuth device code flow to get a compliance access token,
           # then pass it via -AccessToken.
-          $complianceScope = 'https://ps.compliance.protection.outlook.com/.default offline_access'
+          $complianceResource = 'https://ps.compliance.protection.outlook.com'
           $clientId = 'fb78d390-0c51-40cd-8e17-fdbfab77d9c3'  # EXO PowerShell public client
-          $deviceCodeBody = @{ client_id = $clientId; scope = $complianceScope }
+          $deviceCodeBody = @{ client_id = $clientId; resource = $complianceResource }
           try {
-            $deviceResp = Invoke-RestMethod -Method POST -Uri 'https://login.microsoftonline.com/organizations/oauth2/v2.0/devicecode' -Body $deviceCodeBody
+            $deviceResp = Invoke-RestMethod -Method POST -Uri 'https://login.microsoftonline.com/common/oauth2/devicecode' -Body $deviceCodeBody
             Write-Host $deviceResp.message -ForegroundColor Yellow
-            $tokenBody = @{ client_id = $clientId; grant_type = 'urn:ietf:params:oauth:grant-type:device_code'; device_code = $deviceResp.device_code }
+            $tokenBody = @{ client_id = $clientId; grant_type = 'urn:ietf:params:oauth:grant-type:device_code'; code = $deviceResp.device_code }
             $deadline = (Get-Date).AddSeconds($deviceResp.expires_in)
             $complianceToken = $null
             while ((Get-Date) -lt $deadline) {
               Start-Sleep -Seconds $deviceResp.interval
               try {
-                $tokenResp = Invoke-RestMethod -Method POST -Uri 'https://login.microsoftonline.com/organizations/oauth2/v2.0/token' -Body $tokenBody
+                $tokenResp = Invoke-RestMethod -Method POST -Uri 'https://login.microsoftonline.com/common/oauth2/token' -Body $tokenBody
                 $complianceToken = $tokenResp.access_token
                 break
               } catch {
-                $errMsg = $_.ErrorDetails.Message | ConvertFrom-Json -ErrorAction SilentlyContinue
-                if ($errMsg.error -eq 'authorization_pending') { continue }
+                $errBody = $null
+                try { $errBody = $_.ErrorDetails.Message | ConvertFrom-Json } catch {}
+                if ($errBody.error -eq 'authorization_pending') { continue }
                 throw
               }
             }
