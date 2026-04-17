@@ -254,10 +254,16 @@ foreach ($step in $selected) {
       throw "Step '$($step.File)' requires Microsoft 365 connectivity. Re-run with -ConnectM365 plus either -M365UserPrincipalName or app-only parameters."
     }
     if (-not $exoSessionEstablished) {
+      # -CommandName uses WinRM implicit remoting (broken on PS 7).
+      # On Windows we re-launch under PS 5.1; on Linux/macOS we omit -CommandName
+      # so EXO uses its REST-based module which works on PS 7.
+      $useCommandName = (-not $IsLinux -and -not $IsMacOS)
       $useInteractiveM365 = -not [string]::IsNullOrWhiteSpace($M365UserPrincipalName)
       if ($useInteractiveM365) {
         Write-Host "Connecting to Exchange Online for compliance cmdlets..." -ForegroundColor Cyan
-        Connect-ExchangeOnline -UserPrincipalName $M365UserPrincipalName -ShowBanner:$false -CommandName $exoCmds -DisableWAM -Device | Out-Null
+        $exoParams = @{ UserPrincipalName = $M365UserPrincipalName; ShowBanner = $false; DisableWAM = $true; Device = $true }
+        if ($useCommandName) { $exoParams['CommandName'] = $exoCmds }
+        Connect-ExchangeOnline @exoParams | Out-Null
         Write-Host "Connecting to Security & Compliance PowerShell..." -ForegroundColor Cyan
         Connect-IPPSSession -UserPrincipalName $M365UserPrincipalName -ShowBanner:$false | Out-Null
       } else {
@@ -277,7 +283,11 @@ foreach ($step in $selected) {
           throw "Supply either M365CertificateThumbprint or M365CertificatePath for app-only authentication."
         }
         Write-Host "Connecting to Exchange Online via app-only authentication..." -ForegroundColor Cyan
-        Connect-ExchangeOnline @appExchangeParams -CommandName $exoCmds -DisableWAM | Out-Null
+        $appExoConnectParams = @{}
+        $appExchangeParams.GetEnumerator() | ForEach-Object { $appExoConnectParams[$_.Key] = $_.Value }
+        $appExoConnectParams['DisableWAM'] = $true
+        if ($useCommandName) { $appExoConnectParams['CommandName'] = $exoCmds }
+        Connect-ExchangeOnline @appExoConnectParams | Out-Null
         Write-Host "Connecting to Security & Compliance PowerShell via app-only authentication..." -ForegroundColor Cyan
         $appIPPSParams = @{}
         foreach ($key in $appExchangeParams.Keys) {
