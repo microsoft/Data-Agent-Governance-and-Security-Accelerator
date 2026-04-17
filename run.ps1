@@ -11,6 +11,32 @@ param(
   [string]   $M365CertificatePath,
   [string]   $M365CertificatePassword
 )
+
+# --- PS 7 → Windows PowerShell 5.1 re-launch for M365/EXO compatibility ---
+# Connect-ExchangeOnline -CommandName uses WinRM implicit remoting, which is
+# broken on PowerShell 7.  Re-launch under powershell.exe (5.1) when needed.
+if ($ConnectM365 -and $PSVersionTable.PSVersion.Major -ge 7) {
+  $ps51 = Join-Path $env:SystemRoot "System32\WindowsPowerShell\v1.0\powershell.exe"
+  if (-not (Test-Path $ps51)) {
+    throw "Windows PowerShell 5.1 is required for M365 connectivity but was not found."
+  }
+  Write-Host "Re-launching under Windows PowerShell 5.1 for M365 compatibility..." -ForegroundColor Cyan
+  $relaunchArgs = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $PSCommandPath)
+  $relaunchArgs += '-SpecPath', $SpecPath
+  $relaunchArgs += '-Tags', ($Tags -join ',')
+  if ($DryRun)          { $relaunchArgs += '-DryRun' }
+  if ($ContinueOnError) { $relaunchArgs += '-ContinueOnError' }
+  $relaunchArgs += '-ConnectM365'
+  if ($M365UserPrincipalName)      { $relaunchArgs += '-M365UserPrincipalName',      $M365UserPrincipalName }
+  if ($M365AppId)                  { $relaunchArgs += '-M365AppId',                  $M365AppId }
+  if ($M365Organization)           { $relaunchArgs += '-M365Organization',           $M365Organization }
+  if ($M365CertificateThumbprint)  { $relaunchArgs += '-M365CertificateThumbprint',  $M365CertificateThumbprint }
+  if ($M365CertificatePath)        { $relaunchArgs += '-M365CertificatePath',        $M365CertificatePath }
+  if ($M365CertificatePassword)    { $relaunchArgs += '-M365CertificatePassword',    $M365CertificatePassword }
+  & $ps51 @relaunchArgs
+  exit $LASTEXITCODE
+}
+
 if($M365UserPrincipalName){ $env:DAGA_M365_UPN = $M365UserPrincipalName } else { Remove-Item Env:DAGA_M365_UPN -ErrorAction SilentlyContinue }
 if(-not $M365AppId -and $env:DAGA_M365_APP_ID){ $M365AppId = $env:DAGA_M365_APP_ID }
 if(-not $M365Organization -and $env:DAGA_M365_ORGANIZATION){ $M365Organization = $env:DAGA_M365_ORGANIZATION }
@@ -231,7 +257,7 @@ foreach ($step in $selected) {
       $useInteractiveM365 = -not [string]::IsNullOrWhiteSpace($M365UserPrincipalName)
       if ($useInteractiveM365) {
         Write-Host "Connecting to Exchange Online for compliance cmdlets..." -ForegroundColor Cyan
-        Connect-ExchangeOnline -UserPrincipalName $M365UserPrincipalName -ShowBanner:$false -CommandName $exoCmds -Device | Out-Null
+        Connect-ExchangeOnline -UserPrincipalName $M365UserPrincipalName -ShowBanner:$false -CommandName $exoCmds -DisableWAM -Device | Out-Null
         Write-Host "Connecting to Security & Compliance PowerShell..." -ForegroundColor Cyan
         Connect-IPPSSession -UserPrincipalName $M365UserPrincipalName -ShowBanner:$false | Out-Null
       } else {
@@ -251,7 +277,7 @@ foreach ($step in $selected) {
           throw "Supply either M365CertificateThumbprint or M365CertificatePath for app-only authentication."
         }
         Write-Host "Connecting to Exchange Online via app-only authentication..." -ForegroundColor Cyan
-        Connect-ExchangeOnline @appExchangeParams -CommandName $exoCmds | Out-Null
+        Connect-ExchangeOnline @appExchangeParams -CommandName $exoCmds -DisableWAM | Out-Null
         Write-Host "Connecting to Security & Compliance PowerShell via app-only authentication..." -ForegroundColor Cyan
         $appIPPSParams = @{}
         foreach ($key in $appExchangeParams.Keys) {
