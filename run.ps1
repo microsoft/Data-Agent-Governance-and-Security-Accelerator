@@ -272,33 +272,41 @@ foreach ($step in $selected) {
           # Headless Linux (Codespace): browser auth fails silently for IPPS.
           # Do a manual OAuth device code flow to get a compliance access token,
           # then pass it via -AccessToken.
-          $complianceResource = 'https://ps.compliance.protection.outlook.com'
           $clientId = 'fb78d390-0c51-40cd-8e17-fdbfab77d9c3'  # EXO PowerShell public client
-          $deviceCodeBody = @{ client_id = $clientId; resource = $complianceResource }
-          try {
-            $deviceResp = Invoke-RestMethod -Method POST -Uri 'https://login.microsoftonline.com/common/oauth2/devicecode' -Body $deviceCodeBody
-            Write-Host $deviceResp.message -ForegroundColor Yellow
-            $tokenBody = @{ client_id = $clientId; grant_type = 'urn:ietf:params:oauth:grant-type:device_code'; code = $deviceResp.device_code }
-            $deadline = (Get-Date).AddSeconds($deviceResp.expires_in)
-            $complianceToken = $null
-            while ((Get-Date) -lt $deadline) {
-              Start-Sleep -Seconds $deviceResp.interval
-              try {
-                $tokenResp = Invoke-RestMethod -Method POST -Uri 'https://login.microsoftonline.com/common/oauth2/token' -Body $tokenBody
-                $complianceToken = $tokenResp.access_token
-                break
-              } catch {
-                $errBody = $null
-                try { $errBody = $_.ErrorDetails.Message | ConvertFrom-Json } catch {}
-                if ($errBody.error -eq 'authorization_pending') { continue }
-                throw
+          $complianceToken = $null
+          # Try multiple resource URLs — the EXO client may only support certain audiences
+          foreach ($resource in @('https://outlook.office365.com','https://ps.compliance.protection.outlook.com')) {
+            $deviceCodeBody = @{ client_id = $clientId; resource = $resource }
+            try {
+              $deviceResp = Invoke-RestMethod -Method POST -Uri 'https://login.microsoftonline.com/common/oauth2/devicecode' -Body $deviceCodeBody
+              Write-Host $deviceResp.message -ForegroundColor Yellow
+              $tokenBody = @{ client_id = $clientId; grant_type = 'urn:ietf:params:oauth:grant-type:device_code'; code = $deviceResp.device_code }
+              $deadline = (Get-Date).AddSeconds($deviceResp.expires_in)
+              while ((Get-Date) -lt $deadline) {
+                Start-Sleep -Seconds $deviceResp.interval
+                try {
+                  $tokenResp = Invoke-RestMethod -Method POST -Uri 'https://login.microsoftonline.com/common/oauth2/token' -Body $tokenBody
+                  $complianceToken = $tokenResp.access_token
+                  break
+                } catch {
+                  $errBody = $null
+                  try { $errBody = $_.ErrorDetails.Message | ConvertFrom-Json } catch {}
+                  if ($errBody.error -eq 'authorization_pending') { continue }
+                  throw
+                }
               }
+              if ($complianceToken) { break }
+            } catch {
+              Write-Host "Device code for resource '$resource' failed: $($_.Exception.Message)" -ForegroundColor DarkGray
+              $errDetail = $null
+              try { $errDetail = $_.ErrorDetails.Message } catch {}
+              if ($errDetail) { Write-Host "  Detail: $errDetail" -ForegroundColor DarkGray }
             }
-            if (-not $complianceToken) { throw "Device code expired before authentication completed." }
+          }
+          if ($complianceToken) {
             Connect-IPPSSession -AccessToken $complianceToken -ShowBanner:$false | Out-Null
-          } catch {
-            Write-Warning "Compliance (IPPS) connection failed: $($_.Exception.Message)"
-            Write-Warning "Compliance steps that require Get-Label may fail."
+          } else {
+            Write-Warning "Unable to obtain compliance token. Steps requiring Get-Label may fail."
           }
         }
       } else {
