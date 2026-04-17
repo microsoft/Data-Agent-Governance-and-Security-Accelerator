@@ -269,7 +269,35 @@ foreach ($step in $selected) {
         if (-not $useCommandName -and (Get-Command Connect-IPPSSession).Parameters.ContainsKey('UseRPSSession')) {
           $ippsParams['UseRPSSession'] = $false
         }
-        Connect-IPPSSession @ippsParams | Out-Null
+        try {
+          Connect-IPPSSession @ippsParams
+        } catch {
+          Write-Warning "Initial IPPS connection failed: $($_.Exception.Message)"
+        }
+
+        # On headless Linux (e.g. Codespace), browser auth may silently fail.
+        # Fall back to az CLI access token if compliance cmdlets aren't loaded.
+        if (-not (Get-Command Get-Label -ErrorAction SilentlyContinue) -and (Get-Command az -ErrorAction SilentlyContinue)) {
+          Write-Host "Compliance cmdlets not available; retrying with az CLI access token..." -ForegroundColor Yellow
+          $ippsTokenParams = @{ ShowBanner = $false }
+          if ((Get-Command Connect-IPPSSession).Parameters.ContainsKey('UseRPSSession')) {
+            $ippsTokenParams['UseRPSSession'] = $false
+          }
+          $tokenOk = $false
+          foreach ($resource in @('https://ps.compliance.protection.outlook.com/','https://outlook.office365.com/')) {
+            try {
+              $tok = (az account get-access-token --resource $resource --query accessToken -o tsv 2>$null)
+              if ($tok -and (Get-Command Connect-IPPSSession).Parameters.ContainsKey('AccessToken')) {
+                $ippsTokenParams['AccessToken'] = $tok
+                Connect-IPPSSession @ippsTokenParams
+                if (Get-Command Get-Label -ErrorAction SilentlyContinue) { $tokenOk = $true; break }
+              }
+            } catch { continue }
+          }
+          if (-not $tokenOk) {
+            Write-Warning "Unable to load compliance cmdlets (Get-Label). Compliance steps that need labels may fail."
+          }
+        }
       } else {
         if (-not $M365AppId -or -not $M365Organization) {
           throw "Provide either -M365UserPrincipalName for interactive auth or -M365AppId/-M365Organization plus certificate details for app-only connections."
