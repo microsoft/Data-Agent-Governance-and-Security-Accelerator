@@ -13,9 +13,18 @@ if(-not $spec.purviewAccount){
   exit 0
 }
 
+$fabric = $null
+$fabricProp = $spec.PSObject.Properties['fabric']
+if($fabricProp -and $fabricProp.Value){
+  $fabric = $fabricProp.Value
+}
+
 $workspaces = @()
-if($spec.fabric -and $spec.fabric.workspaces){
-  $workspaces = @($spec.fabric.workspaces)
+if($fabric){
+  $workspacesProp = $fabric.PSObject.Properties['workspaces']
+  if($workspacesProp -and $workspacesProp.Value){
+    $workspaces = @($workspacesProp.Value)
+  }
 }
 if($workspaces.Count -eq 0){
   Write-Host "No fabric.workspaces entries found. Skipping Purview collection setup." -ForegroundColor DarkGray
