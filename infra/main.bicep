@@ -40,7 +40,7 @@ param dagaM365CertificatePassword string = ''
 
 // azd preflight rejects an ARM template with zero resources. This nested deployment is intentionally
 // inert and exists only so azd can validate and invoke the post-provision hook-driven automation.
-resource bootstrapNoOp 'Microsoft.Resources/deployments@2024-03-01' = {
+resource bootstrapNoOp 'Microsoft.Resources/deployments@2025-04-01' = {
 	name: 'daga-bootstrap-noop-${environmentName}'
 	location: deploymentLocation
 	properties: {
