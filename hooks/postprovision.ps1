@@ -140,13 +140,19 @@ function Import-AzdLoginContext {
 
   # Ensure PSGallery is registered and trusted (matches run.ps1 bootstrap logic)
   try {
-    $gallery = Get-PSRepository -Name PSGallery -ErrorAction Stop
+    $gallery = Get-PSRepository -Name PSGallery -ErrorAction SilentlyContinue
+    if (-not $gallery) {
+      Register-PSRepository -Default -ErrorAction Stop
+      $gallery = Get-PSRepository -Name PSGallery -ErrorAction Stop
+      Write-Host "Registered PSGallery for module installs." -ForegroundColor DarkGray
+    }
+
     if ($gallery.InstallationPolicy -ne "Trusted") {
       Set-PSRepository -Name PSGallery -InstallationPolicy Trusted -ErrorAction Stop
       Write-Host "Trusted PSGallery for module installs." -ForegroundColor DarkGray
     }
   } catch {
-    Write-Warning "Unable to update PSGallery trust settings: $($_.Exception.Message)"
+    Write-Warning "Unable to register or trust PSGallery: $($_.Exception.Message)"
   }
 
   # Auto-install or upgrade Az.Accounts if the required version is not available (e.g. devcontainer / CI environments)
