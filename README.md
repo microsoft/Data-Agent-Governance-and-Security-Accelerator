@@ -77,6 +77,8 @@ Deploy this solution to your Azure subscription using the Azure Developer CLI.
 
 > **Note:** This solution accelerator requires Azure Developer CLI (azd) version 1.9.0 or higher. Please ensure you have the latest version installed before proceeding with deployment. [Download azd here](https://learn.microsoft.com/en-us/azure/developer/azure-developer-cli/install-azd).
 
+> **Note:** This solution accelerator also requires **Bicep CLI version 0.33.0 or higher** for compiling infrastructure templates. [Install Bicep](https://learn.microsoft.com/azure/azure-resource-manager/bicep/install).
+
 [Click here to launch the deployment guide](./docs/DeploymentGuide.md)
 
 | [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/microsoft/Data-Agent-Governance-and-Security-Accelerator) | [![Open in Dev Containers](https://img.shields.io/static/v1?style=for-the-badge&label=Dev%20Containers&message=Open&color=blue&logo=visualstudiocode)](https://vscode.dev/redirect?url=vscode://ms-vscode-remote.remote-containers/cloneInVolume?url=https://github.com/microsoft/Data-Agent-Governance-and-Security-Accelerator) |
