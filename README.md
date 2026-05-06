@@ -91,6 +91,7 @@ Make sure you have:
 - Azure CLI 2.58.0+
 - Azure Developer CLI (azd) 1.9.0+
 - PowerShell 7.x with Az modules
+- Bicep CLI 0.33.0+
 - Access to the target Azure subscription and Purview account
 - Microsoft 365 compliance permissions if you plan to run `m365`
 
