@@ -130,6 +130,7 @@ Initialize-AutomationEnvironment -RequireExchange:$ConnectM365
 # preventing "Assembly with same name is already loaded" on CI runners where
 # postprovision.ps1 pre-loads Az modules before invoking run.ps1.
 function Import-Module {
+  [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidOverwritingBuiltInCmdlets','')]
   [CmdletBinding()]
   param(
     [Parameter(Position=0)][string[]]$Name,
