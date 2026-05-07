@@ -133,11 +133,17 @@ function Import-Module {
   [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidOverwritingBuiltInCmdlets','')]
   [CmdletBinding()]
   param(
-    [Parameter(Position=0)][string[]]$Name,
+    [Parameter(Mandatory=$true, Position=0)][ValidateNotNullOrEmpty()][string[]]$Name,
     [switch]$Force,
     [string]$MinimumVersion
   )
-  $toImport = @($Name | Where-Object { -not (Get-Module $_) })
+  $toImport = @($Name | Where-Object {
+    $loaded = Get-Module $_
+    if (-not $loaded) { return $true }
+    if ($Force) { return $true }
+    if ($MinimumVersion -and $loaded.Version -lt [version]$MinimumVersion) { return $true }
+    return $false
+  })
   if ($toImport.Count -eq 0) { return }
   $params = @{ Name = $toImport; ErrorAction = $ErrorActionPreference }
   if ($Force)          { $params['Force'] = $true }
