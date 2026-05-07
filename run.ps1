@@ -195,7 +195,6 @@ Write-Host "Running steps for tags: $($Tags -join ', ')" -ForegroundColor Cyan
 
 $fabricLabelsConfigured = Test-HasFabricLakehouseSensitivityLabels -Path $SpecPath
 
-# PSScriptAnalyzerSuppressMessage("PSAvoidAssignmentToAutomaticVariable", "", "No automatic variables are assigned; parameters are tracked via local ordered hashtable")
 foreach ($step in $selected) {
   if ($step.File -eq "scripts/governance/dspmPurview/26-Apply-FabricLakehouseSensitivity.ps1" -and -not $fabricLabelsConfigured) {
     Write-Host "Skipping Fabric lakehouse label apply step because no lakehouse sensitivity labels are configured in spec." -ForegroundColor DarkGray
