@@ -89,22 +89,11 @@ function Initialize-AutomationEnvironment {
     }
   }
 
-  # Ensure user-installed modules are resolved first in PSModulePath so that
-  # downstream scripts' Import-Module calls find the same version already loaded,
-  # avoiding "Assembly with same name is already loaded" errors on CI runners
-  # that ship older pre-installed Az modules.
-  $userModulePath = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'powershell' 'Modules'
-  if (-not (Test-Path $userModulePath)) {
-    $userModulePath = Join-Path $HOME '.local' 'share' 'powershell' 'Modules'
+  # Guard: skip import when Az.Accounts is already loaded (e.g. by postprovision.ps1)
+  # to avoid "Assembly with same name is already loaded" on CI runners.
+  if (-not (Get-Module Az.Accounts)) {
+    Import-Module Az.Accounts -ErrorAction Stop | Out-Null
   }
-  if (Test-Path $userModulePath) {
-    $paths = $env:PSModulePath -split [IO.Path]::PathSeparator
-    if ($paths[0] -ne $userModulePath) {
-      $env:PSModulePath = (@($userModulePath) + ($paths | Where-Object { $_ -ne $userModulePath })) -join [IO.Path]::PathSeparator
-    }
-  }
-
-  Import-Module Az.Accounts -ErrorAction Stop | Out-Null
 }
 
 function Test-HasFabricLakehouseSensitivityLabels {
@@ -136,6 +125,25 @@ function Test-HasFabricLakehouseSensitivityLabels {
 }
 
 Initialize-AutomationEnvironment -RequireExchange:$ConnectM365
+
+# Shadow Import-Module so downstream scripts skip modules already in memory,
+# preventing "Assembly with same name is already loaded" on CI runners where
+# postprovision.ps1 pre-loads Az modules before invoking run.ps1.
+function Import-Module {
+  param(
+    [Parameter(Position=0)][string[]]$Name,
+    [switch]$Force,
+    [string]$MinimumVersion,
+    [System.Management.Automation.ActionPreference]$ErrorAction = 'Continue'
+  )
+  $toImport = @($Name | Where-Object { -not (Get-Module $_) })
+  if ($toImport.Count -eq 0) { return }
+  $params = @{ Name = $toImport; ErrorAction = $ErrorAction }
+  if ($Force)          { $params['Force'] = $true }
+  if ($MinimumVersion) { $params['MinimumVersion'] = $MinimumVersion }
+  Microsoft.PowerShell.Core\Import-Module @params
+}
+
 $planEntry = {
   param([int]$Order,[string]$File,[string[]]$Tags,[bool]$NeedsSpec,[hashtable]$Parameters)
   [pscustomobject]@{
