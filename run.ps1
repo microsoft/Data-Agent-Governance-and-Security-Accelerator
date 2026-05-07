@@ -54,6 +54,21 @@ function Initialize-AutomationEnvironment {
     Remove-Module -Name ExchangeOnlineManagement -Force -ErrorAction SilentlyContinue
   }
 
+  # Detect an already-loaded Az.Accounts in this session. Once loaded, its
+  # assemblies are pinned for the lifetime of the process; installing a
+  # different version and re-importing causes:
+  #   "Could not load file or assembly 'Microsoft.Azure.PowerShell.AssemblyLoading' ...
+  #    Assembly with same name is already loaded"
+  $loadedAccounts = Get-Module -Name Az.Accounts -ErrorAction SilentlyContinue |
+                    Sort-Object Version -Descending | Select-Object -First 1
+  $minAccountsVersion = [version]"5.0.0"
+  if ($loadedAccounts) {
+    if ([version]$loadedAccounts.Version -lt $minAccountsVersion) {
+      throw "Az.Accounts $($loadedAccounts.Version) is already loaded in this PowerShell session, but $minAccountsVersion or newer is required. Close this PowerShell window and start a fresh session, then re-run the script."
+    }
+    Write-Host "Reusing already-loaded Az.Accounts $($loadedAccounts.Version)." -ForegroundColor DarkGray
+  }
+
   $moduleSpecs = @(
     @{ Name = "Az.Accounts";            MinimumVersion = "5.0.0" },
     @{ Name = "Az.Resources";           MinimumVersion = $null },
@@ -69,6 +84,11 @@ function Initialize-AutomationEnvironment {
   }
 
   foreach ($module in $moduleSpecs) {
+    # Skip install/import for Az.Accounts if a compatible version is already loaded;
+    # importing a different version into the same session is not supported.
+    if ($module.Name -eq "Az.Accounts" -and $loadedAccounts) {
+      continue
+    }
     $installed = Get-Module -ListAvailable -Name $module.Name -ErrorAction SilentlyContinue | Sort-Object Version -Descending | Select-Object -First 1
     $needsInstall = -not $installed
     if (-not $needsInstall -and $module.MinimumVersion) {
@@ -89,7 +109,9 @@ function Initialize-AutomationEnvironment {
     }
   }
 
-  Import-Module Az.Accounts -ErrorAction Stop | Out-Null
+  if (-not $loadedAccounts) {
+    Import-Module Az.Accounts -ErrorAction Stop | Out-Null
+  }
 }
 
 function Test-HasFabricLakehouseSensitivityLabels {

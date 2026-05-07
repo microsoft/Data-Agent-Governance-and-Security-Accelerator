@@ -120,6 +120,94 @@ function Get-ParamArray {
   return @([string]$value)
 }
 
+function Set-AzdEnvVariable {
+  param(
+    [Parameter(Mandatory)] [string]$Name,
+    [Parameter(Mandatory)] [string]$Value
+  )
+  if (-not (Get-Command azd -ErrorAction SilentlyContinue)) {
+    Write-Warning "azd CLI not found; cannot persist '$Name'. Set it manually with: azd env set $Name <value>"
+    return $false
+  }
+  try {
+    & azd env set $Name $Value | Out-Null
+    Set-Item -Path "Env:$Name" -Value $Value
+    return $true
+  } catch {
+    Write-Warning "Failed to persist azd env var '$Name': $($_.Exception.Message)"
+    return $false
+  }
+}
+
+function Resolve-SignedInUserPrincipalName {
+  <#
+    Returns the UPN of the currently signed-in az/azd user, or $null if it
+    cannot be determined. Tries (in order):
+      1. azd auth login context (azd auth token --output json -> upn claim)
+      2. az account show -> user.name (preferred when type == 'user')
+      3. az ad signed-in-user show -> userPrincipalName
+  #>
+  if (Get-Command az -ErrorAction SilentlyContinue) {
+    try {
+      $accountJson = az account show --output json 2>$null
+      if ($accountJson) {
+        $account = $accountJson | ConvertFrom-Json
+        $userType = $null
+        if ($account.user -and $account.user.PSObject.Properties['type']) {
+          $userType = [string]$account.user.type
+        }
+        $userName = $null
+        if ($account.user -and $account.user.PSObject.Properties['name']) {
+          $userName = [string]$account.user.name
+        }
+        if ($userName -and ($userType -eq 'user' -or $userName -like '*@*')) {
+          return $userName
+        }
+      }
+    } catch { }
+
+    try {
+      $signedInJson = az ad signed-in-user show --output json 2>$null
+      if ($signedInJson) {
+        $signedIn = $signedInJson | ConvertFrom-Json
+        $upn = $null
+        if ($signedIn.PSObject.Properties['userPrincipalName']) {
+          $upn = [string]$signedIn.userPrincipalName
+        }
+        if (-not $upn -and $signedIn.PSObject.Properties['mail']) {
+          $upn = [string]$signedIn.mail
+        }
+        if ($upn) { return $upn }
+      }
+    } catch { }
+  }
+  return $null
+}
+
+function Initialize-M365EnvFromSignIn {
+  <#
+    Auto-enables M365 post-provisioning by setting the two azd env variables
+    documented in Step 4 of DeploymentGuide.md, derived from the active
+    azd auth login / az login context. Existing values are preserved.
+  #>
+  if (-not $env:DAGA_POSTPROVISION_CONNECT_M365) {
+    if (Set-AzdEnvVariable -Name 'DAGA_POSTPROVISION_CONNECT_M365' -Value 'true') {
+      Write-Host "Enabled M365 post-provisioning (DAGA_POSTPROVISION_CONNECT_M365=true)." -ForegroundColor DarkGray
+    }
+  }
+
+  if (-not $env:DAGA_POSTPROVISION_M365_UPN) {
+    $upn = Resolve-SignedInUserPrincipalName
+    if ($upn) {
+      if (Set-AzdEnvVariable -Name 'DAGA_POSTPROVISION_M365_UPN' -Value $upn) {
+        Write-Host "Resolved M365 UPN from signed-in account: $upn" -ForegroundColor DarkGray
+      }
+    } else {
+      Write-Warning "Unable to determine UPN from azd/az sign-in. Set DAGA_POSTPROVISION_M365_UPN manually if M365 steps are required."
+    }
+  }
+}
+
 function Import-AzdLoginContext {
   param([string]$SubscriptionId)
 
@@ -217,6 +305,10 @@ if ($Tags.Count -gt 0) {
   $tagArray = ConvertTo-TagArray -tagInput $null
 }
 $connectM365 = $ConnectM365.IsPresent
+if (-not $connectM365 -and -not $env:DAGA_POSTPROVISION_CONNECT_M365) {
+  # Auto-enable M365 + auto-resolve UPN from the signed-in az/azd account.
+  Initialize-M365EnvFromSignIn
+}
 if (-not $connectM365 -and $env:DAGA_POSTPROVISION_CONNECT_M365) {
   [bool]::TryParse($env:DAGA_POSTPROVISION_CONNECT_M365, [ref]$connectM365) | Out-Null
 }

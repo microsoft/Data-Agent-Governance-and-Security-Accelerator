@@ -239,7 +239,19 @@ See the complete [Spec Field Reference](./spec-local-reference.md) for detailed 
 
 ## 4. Configure Microsoft 365 environment variables
 
-If your deployment includes Fabric sensitivity labels or M365 compliance steps, set the following `azd` environment variables so the post-provision hook can authenticate to Exchange Online:
+> The `azd up` `postprovision` hook now sets these automatically based on your
+> active `azd auth login` / `az login` context. No prompt is shown:
+>
+> - `DAGA_POSTPROVISION_CONNECT_M365` is set to `true` if not already defined.
+> - `DAGA_POSTPROVISION_M365_UPN` is resolved from the signed-in user
+>   (`az account show` -> `user.name`, falling back to `az ad signed-in-user
+>   show` -> `userPrincipalName`).
+>
+> To opt out, run `azd env set DAGA_POSTPROVISION_CONNECT_M365 false` before
+> `azd up`. To override the auto-detected UPN, set
+> `DAGA_POSTPROVISION_M365_UPN` yourself.
+
+If you want to set them manually, use:
 
 ```powershell
 azd env set DAGA_POSTPROVISION_CONNECT_M365 true
@@ -274,7 +286,15 @@ Environment variables (`DAGA_SPEC_PATH`, `DAGA_POSTPROVISION_TAGS`, etc.) overri
 
 ## 6. Install AZ modules (Optional)
 
-If you don't have the required Azure PowerShell modules installed, run the following commands to install them:
+> The `azd up` `preprovision` hook now installs/updates the required Azure
+> PowerShell modules automatically. For each module it checks the highest
+> version installed locally against the latest published version on PSGallery
+> and only installs/updates when the local copy is missing or older. To skip
+> this step (for example, in air-gapped or restricted environments), set
+> `DAGA_SKIP_AZ_MODULE_INSTALL=1` before running `azd up` and install the
+> modules manually using the commands below.
+
+If you prefer to install them manually, run the following commands:
 
 ```powershell
 # Installs the main Azure PowerShell module, which provides cmdlets for managing Azure resources
