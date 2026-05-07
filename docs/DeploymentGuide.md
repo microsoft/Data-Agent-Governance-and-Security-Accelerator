@@ -13,6 +13,7 @@ Before starting, confirm you have the following ready:
 | Tool | Minimum Version | Check Command | Install Link |
 |------|-----------------|---------------|---------------|
 | Azure Developer CLI (azd) | 1.9.0+ | `azd version` | [Install azd](https://learn.microsoft.com/azure/developer/azure-developer-cli/install-azd) |
+| Bicep CLI | 0.33.0+ | `az bicep version` | [Install Bicep](https://learn.microsoft.com/azure/azure-resource-manager/bicep/install) |
 | Azure CLI | 2.58.0+ | `az --version` | [Install Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli) |
 | PowerShell | 7.x | `pwsh --version` | [Install PowerShell](https://learn.microsoft.com/powershell/scripting/install/installing-powershell) |
 | Az PowerShell modules | Latest | `Get-Module Az -ListAvailable` | `Install-Module Az -Scope CurrentUser -Force` |
