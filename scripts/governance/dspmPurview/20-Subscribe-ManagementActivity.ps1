@@ -7,7 +7,7 @@ if(-not $spec.activityExport -or -not $spec.activityExport.contentTypes -or -not
 	exit 0
 }
 
-Import-Module Az.Accounts -ErrorAction Stop
+@('Az.Accounts') | Where-Object { -not (Get-Module $_) } | ForEach-Object { Import-Module $_ -ErrorAction Stop }
 $token = (Get-AzAccessToken -ResourceUrl "https://manage.office.com").Token
 $h = @{ Authorization = "Bearer $token" }
 $base = "https://manage.office.com/api/v1.0/$($spec.tenantId)/activity/feed/subscriptions"

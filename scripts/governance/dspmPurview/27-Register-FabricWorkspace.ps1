@@ -5,7 +5,7 @@ $ErrorActionPreference = 'Stop'
 $spec = Get-Content $SpecPath -Raw | ConvertFrom-Json
 $ensureContextPath = Join-Path $PSScriptRoot "..\..\common\Ensure-AzContext.ps1"
 . $ensureContextPath
-Import-Module Az.Accounts, Az.Resources -ErrorAction Stop
+@('Az.Accounts','Az.Resources') | Where-Object { -not (Get-Module $_) } | ForEach-Object { Import-Module $_ -ErrorAction Stop }
 Ensure-AzContext -TenantId $spec.tenantId -SubscriptionId $spec.subscriptionId
 
 if(-not $spec.purviewAccount){

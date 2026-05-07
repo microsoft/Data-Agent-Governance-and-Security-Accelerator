@@ -72,7 +72,7 @@ function Ensure-AzContext {
     [Parameter(Mandatory=$true)][string]$TenantId,
     [Parameter(Mandatory=$true)][string]$SubscriptionId
   )
-  Import-Module Az.Accounts -ErrorAction Stop
+  @('Az.Accounts') | Where-Object { -not (Get-Module $_) } | ForEach-Object { Import-Module $_ -ErrorAction Stop }
   $current = Get-AzContext -ErrorAction SilentlyContinue
   if(Test-AzContextMatch -Context $current -TenantId $TenantId -SubscriptionId $SubscriptionId){
     return
