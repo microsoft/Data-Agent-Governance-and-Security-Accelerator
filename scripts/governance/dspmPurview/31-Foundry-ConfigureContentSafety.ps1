@@ -5,7 +5,7 @@ $spec = Get-Content $SpecPath -Raw | ConvertFrom-Json
 if(!$spec.foundry.contentSafety){ Write-Host "No foundry.contentSafety"; exit 0 }
 $ensureContextPath = Join-Path $PSScriptRoot "..\..\common\Ensure-AzContext.ps1"
 . $ensureContextPath
-@('Az.Accounts','Az.KeyVault','Az.Resources') | Where-Object { -not (Get-Module $_) } | ForEach-Object { Import-Module $_ -ErrorAction Stop }
+Import-Module Az.Accounts, Az.KeyVault, Az.Resources -ErrorAction Stop
 Ensure-AzContext -TenantId $spec.tenantId -SubscriptionId $spec.subscriptionId
 $cs = $spec.foundry.contentSafety
 if([string]::IsNullOrWhiteSpace($cs.endpoint)){ Write-Host "foundry.contentSafety.endpoint not provided" -ForegroundColor Yellow; exit 0 }

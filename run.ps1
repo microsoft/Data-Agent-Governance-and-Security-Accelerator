@@ -89,12 +89,22 @@ function Initialize-AutomationEnvironment {
     }
   }
 
-  $loadedAz = Get-Module -Name Az.Accounts -ErrorAction SilentlyContinue
-  if ($loadedAz) {
-    Write-Host "Az.Accounts $($loadedAz.Version) already loaded; skipping import." -ForegroundColor DarkGray
-  } else {
-    Import-Module Az.Accounts -ErrorAction Stop | Out-Null
+  # Ensure user-installed modules are resolved first in PSModulePath so that
+  # downstream scripts' Import-Module calls find the same version already loaded,
+  # avoiding "Assembly with same name is already loaded" errors on CI runners
+  # that ship older pre-installed Az modules.
+  $userModulePath = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'powershell' 'Modules'
+  if (-not (Test-Path $userModulePath)) {
+    $userModulePath = Join-Path $HOME '.local' 'share' 'powershell' 'Modules'
   }
+  if (Test-Path $userModulePath) {
+    $paths = $env:PSModulePath -split [IO.Path]::PathSeparator
+    if ($paths[0] -ne $userModulePath) {
+      $env:PSModulePath = (@($userModulePath) + ($paths | Where-Object { $_ -ne $userModulePath })) -join [IO.Path]::PathSeparator
+    }
+  }
+
+  Import-Module Az.Accounts -ErrorAction Stop | Out-Null
 }
 
 function Test-HasFabricLakehouseSensitivityLabels {

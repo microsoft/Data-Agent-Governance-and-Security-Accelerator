@@ -3,7 +3,7 @@ param([Parameter(Mandatory=$true)][string]$SpecPath)
 $spec = Get-Content $SpecPath -Raw | ConvertFrom-Json
 $ensureContextPath = Join-Path $PSScriptRoot "..\..\common\Ensure-AzContext.ps1"
 . $ensureContextPath
-@('Az.Accounts','Az.Purview') | Where-Object { -not (Get-Module $_) } | ForEach-Object { Import-Module $_ -ErrorAction Stop }
+Import-Module Az.Accounts, Az.Purview -ErrorAction Stop
 $purviewSubId = if ($spec.purviewSubscriptionId) { $spec.purviewSubscriptionId } else { $spec.subscriptionId }
 $purviewRg    = if ($spec.purviewResourceGroup) { $spec.purviewResourceGroup } else { $spec.resourceGroup }
 Ensure-AzContext -TenantId $spec.tenantId -SubscriptionId $purviewSubId
