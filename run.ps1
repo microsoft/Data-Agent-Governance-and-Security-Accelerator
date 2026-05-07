@@ -89,7 +89,7 @@ function Initialize-AutomationEnvironment {
     }
   }
 
-  Import-Module Az.Accounts -ErrorAction Stop | Out-Null
+  Import-Module Az.Accounts -Force -ErrorAction Stop | Out-Null
 }
 
 function Test-HasFabricLakehouseSensitivityLabels {
