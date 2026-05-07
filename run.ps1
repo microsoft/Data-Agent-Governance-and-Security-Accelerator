@@ -89,7 +89,12 @@ function Initialize-AutomationEnvironment {
     }
   }
 
-  Import-Module Az.Accounts -Force -ErrorAction Stop | Out-Null
+  $loadedAz = Get-Module -Name Az.Accounts -ErrorAction SilentlyContinue
+  if ($loadedAz) {
+    Write-Host "Az.Accounts $($loadedAz.Version) already loaded; skipping import." -ForegroundColor DarkGray
+  } else {
+    Import-Module Az.Accounts -ErrorAction Stop | Out-Null
+  }
 }
 
 function Test-HasFabricLakehouseSensitivityLabels {
