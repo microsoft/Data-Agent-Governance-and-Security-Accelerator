@@ -130,15 +130,15 @@ Initialize-AutomationEnvironment -RequireExchange:$ConnectM365
 # preventing "Assembly with same name is already loaded" on CI runners where
 # postprovision.ps1 pre-loads Az modules before invoking run.ps1.
 function Import-Module {
+  [CmdletBinding()]
   param(
     [Parameter(Position=0)][string[]]$Name,
     [switch]$Force,
-    [string]$MinimumVersion,
-    [System.Management.Automation.ActionPreference]$ErrorAction = 'Continue'
+    [string]$MinimumVersion
   )
   $toImport = @($Name | Where-Object { -not (Get-Module $_) })
   if ($toImport.Count -eq 0) { return }
-  $params = @{ Name = $toImport; ErrorAction = $ErrorAction }
+  $params = @{ Name = $toImport; ErrorAction = $ErrorActionPreference }
   if ($Force)          { $params['Force'] = $true }
   if ($MinimumVersion) { $params['MinimumVersion'] = $MinimumVersion }
   Microsoft.PowerShell.Core\Import-Module @params
