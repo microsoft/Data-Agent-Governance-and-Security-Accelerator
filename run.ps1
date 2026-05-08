@@ -89,7 +89,11 @@ function Initialize-AutomationEnvironment {
     }
   }
 
-  Import-Module Az.Accounts -ErrorAction Stop | Out-Null
+  # Guard: skip import when Az.Accounts is already loaded (e.g. by postprovision.ps1)
+  # to avoid "Assembly with same name is already loaded" on CI runners.
+  if (-not (Get-Module Az.Accounts)) {
+    Import-Module Az.Accounts -ErrorAction Stop | Out-Null
+  }
 }
 
 function Test-HasFabricLakehouseSensitivityLabels {
@@ -121,6 +125,32 @@ function Test-HasFabricLakehouseSensitivityLabels {
 }
 
 Initialize-AutomationEnvironment -RequireExchange:$ConnectM365
+
+# Shadow Import-Module so downstream scripts skip modules already in memory,
+# preventing "Assembly with same name is already loaded" on CI runners where
+# postprovision.ps1 pre-loads Az modules before invoking run.ps1.
+function Import-Module {
+  [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidOverwritingBuiltInCmdlets','')]
+  [CmdletBinding()]
+  param(
+    [Parameter(Mandatory=$true, Position=0)][ValidateNotNullOrEmpty()][string[]]$Name,
+    [switch]$Force,
+    [string]$MinimumVersion
+  )
+  $toImport = @($Name | Where-Object {
+    $loaded = Get-Module $_
+    if (-not $loaded) { return $true }
+    if ($Force) { return $true }
+    if ($MinimumVersion -and $loaded.Version -lt [version]$MinimumVersion) { return $true }
+    return $false
+  })
+  if ($toImport.Count -eq 0) { return }
+  $params = @{ Name = $toImport; ErrorAction = $ErrorActionPreference }
+  if ($Force)          { $params['Force'] = $true }
+  if ($MinimumVersion) { $params['MinimumVersion'] = $MinimumVersion }
+  Microsoft.PowerShell.Core\Import-Module @params
+}
+
 $planEntry = {
   param([int]$Order,[string]$File,[string[]]$Tags,[bool]$NeedsSpec,[hashtable]$Parameters)
   [pscustomobject]@{
