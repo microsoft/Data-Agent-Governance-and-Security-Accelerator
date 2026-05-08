@@ -295,8 +295,12 @@ if(-not $spec.purviewAccount){
 }
 
 $workspaces = @()
-if($spec.fabric -and $spec.fabric.workspaces){
-  $workspaces = @($spec.fabric.workspaces)
+$fabricProp = $spec.PSObject.Properties['fabric']
+if($fabricProp -and $fabricProp.Value){
+  $workspacesProp = $fabricProp.Value.PSObject.Properties['workspaces']
+  if($workspacesProp -and $workspacesProp.Value){
+    $workspaces = @($workspacesProp.Value)
+  }
 }
 if($workspaces.Count -eq 0){
   Write-Host 'No fabric.workspaces entries found. Skipping Fabric workspace scans.' -ForegroundColor DarkGray
@@ -304,8 +308,8 @@ if($workspaces.Count -eq 0){
 }
 
 $scanAutomationMode = 'full'
-if($spec.fabric){
-  $configuredMode = Get-OptionalStringProperty -obj $spec.fabric -name 'scanAutomationMode'
+if($fabricProp -and $fabricProp.Value){
+  $configuredMode = Get-OptionalStringProperty -obj $fabricProp.Value -name 'scanAutomationMode'
   if(-not [string]::IsNullOrWhiteSpace($configuredMode)){
     $scanAutomationMode = $configuredMode.Trim().ToLowerInvariant()
   }

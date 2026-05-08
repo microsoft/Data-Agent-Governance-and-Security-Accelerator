@@ -105,9 +105,13 @@ function Test-HasFabricLakehouseSensitivityLabels {
 
   try {
     $spec = Get-Content $Path -Raw | ConvertFrom-Json
-    if(-not $spec.fabric -or -not $spec.fabric.workspaces){ return $false }
+    $fabricProp = $spec.PSObject.Properties['fabric']
+    if(-not $fabricProp -or -not $fabricProp.Value){ return $false }
 
-    foreach($workspace in @($spec.fabric.workspaces)){
+    $workspacesProp = $fabricProp.Value.PSObject.Properties['workspaces']
+    if(-not $workspacesProp -or -not $workspacesProp.Value){ return $false }
+
+    foreach($workspace in @($workspacesProp.Value)){
       $lakehousesProp = $workspace.PSObject.Properties['lakehouses']
       if($null -eq $lakehousesProp -or $null -eq $lakehousesProp.Value){ continue }
       foreach($lakehouse in @($lakehousesProp.Value)){
