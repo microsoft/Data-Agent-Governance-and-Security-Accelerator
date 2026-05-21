@@ -115,6 +115,7 @@ For organizations that only need to govern Microsoft Foundry projects without fu
 - Azure Contributor RBAC on the subscription containing your Foundry projects
 - PowerShell 7.x and Az modules installed
 - Azure Developer CLI (azd) 1.9.0+ and Azure CLI 2.58.0+
+- Bicep CLI 0.33.0+
 
 ### Minimal spec file
 
