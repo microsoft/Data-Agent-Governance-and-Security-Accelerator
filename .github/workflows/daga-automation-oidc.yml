@@ -1,0 +1,83 @@
+name: DSPM Automation (OIDC)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'scripts/**/*.ps1'
+      - 'infra/**'
+      - 'hooks/**'
+      - 'run.ps1'
+      - 'azure.yaml'
+      - 'spec.*.json'
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  run-automation:
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      SPEC_PATH: ./spec.ci.json
+      CERT_PATH: /tmp/daga-exo-cert.pfx
+      HAS_M365_CERT: ${{ secrets.DAGA_M365_CERT_PFX != '' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Azure login (federated)
+        uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          enable-AzPSSession: true
+
+      - name: Write DSPM spec from secret
+        shell: pwsh
+        run: |
+          $spec = @'
+          ${{ secrets.DAGA_SPEC_JSON }}
+          '@
+          if ([string]::IsNullOrWhiteSpace($spec)) {
+            throw 'DAGA_SPEC_JSON secret is empty or missing.'
+          }
+          $spec | Out-File -FilePath $env:SPEC_PATH -Encoding utf8
+
+      - name: Materialize Exchange certificate
+        if: ${{ env.HAS_M365_CERT == 'true' }}
+        shell: pwsh
+        run: |
+          $bytes = [Convert]::FromBase64String('${{ secrets.DAGA_M365_CERT_PFX }}')
+          [System.IO.File]::WriteAllBytes('${{ env.CERT_PATH }}', $bytes)
+
+      - name: Install PowerShell modules
+        shell: pwsh
+        run: |
+          Install-Module Az -Scope CurrentUser -Force -AllowClobber
+          Install-Module Az.Security -Scope CurrentUser -Force -AllowClobber
+          Install-Module Az.Purview -Scope CurrentUser -Force -AllowClobber
+          Install-Module ExchangeOnlineManagement -Scope CurrentUser -Force
+
+      - name: Run DSPM accelerator
+        shell: pwsh
+        env:
+          DAGA_SPEC_PATH: ${{ env.SPEC_PATH }}
+          DAGA_M365_APP_ID: ${{ secrets.DAGA_M365_APP_ID }}
+          DAGA_M365_ORGANIZATION: ${{ secrets.DAGA_M365_ORGANIZATION }}
+          DAGA_M365_CERT_PATH: ${{ env.CERT_PATH }}
+          DAGA_M365_CERT_PASSWORD: ${{ secrets.DAGA_M365_CERT_PASSWORD }}
+        run: |
+          ./run.ps1 -Tags policies,diagnostics,tags -SpecPath $env:DAGA_SPEC_PATH -ContinueOnError
+
+      - name: Cleanup cert
+        if: ${{ env.HAS_M365_CERT == 'true' }}
+        shell: pwsh
+        run: |
+          if (Test-Path '${{ env.CERT_PATH }}') {
+            Remove-Item '${{ env.CERT_PATH }}' -Force
+          }

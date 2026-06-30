@@ -1,0 +1,72 @@
+name: PowerShell Analysis
+
+on:
+  push:
+    branches: [ "main", "dev" ]
+    paths:
+      - '**/*.ps1'
+  pull_request:
+    branches: [ "main", "dev" ]
+    paths:
+      - '**/*.ps1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  psscriptanalyzer:
+    name: PSScriptAnalyzer
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Run PSScriptAnalyzer
+        uses: microsoft/psscriptanalyzer-action@v1.1
+        with:
+          path: ./
+          recurse: true
+          includeDefaultRules: true
+          excludeRules: 'PSAvoidUsingConvertToSecureStringWithPlainText'
+          output: results.sarif
+          # Severity levels: Error, Warning, Information
+
+      - name: Upload SARIF results
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: results.sarif
+        if: always()
+
+  powershell-lint:
+    name: PowerShell Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Install PSScriptAnalyzer
+        shell: pwsh
+        run: |
+          Install-Module -Name PSScriptAnalyzer -Force -Scope CurrentUser
+
+      - name: Run PSScriptAnalyzer (Detailed)
+        shell: pwsh
+        run: |
+          $results = Get-ChildItem -Path . -Include *.ps1 -Recurse | 
+            ForEach-Object { Invoke-ScriptAnalyzer -Path $_.FullName -Severity Warning,Error -ExcludeRule PSAvoidUsingConvertToSecureStringWithPlainText }
+          
+          if ($results) {
+            $results | Format-Table -AutoSize
+            Write-Host "::warning::Found $($results.Count) issues"
+            
+            # Fail only on errors, not warnings
+            $errors = $results | Where-Object { $_.Severity -eq 'Error' }
+            if ($errors) {
+              Write-Error "Found $($errors.Count) error(s)"
+              exit 1
+            }
+          } else {
+            Write-Host "✅ No issues found!"
+          }

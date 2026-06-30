@@ -1,0 +1,19 @@
+name: data-and-agent-governance-and-security-accelerator
+metadata:
+  template: data-and-agent-governance-and-security-accelerator@1.0
+  azd-version: 1.9.0
+
+requiredVersions:
+  azd: '>= 1.9.0 != 1.23.9'
+
+infra:
+  provider: bicep
+  path: infra
+  module: main
+hooks:
+  preprovision:
+    shell: pwsh
+    run: ./hooks/preprovision.ps1
+  postprovision:
+    shell: pwsh
+    run: ./hooks/postprovision.ps1

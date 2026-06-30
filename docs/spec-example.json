@@ -1,0 +1,146 @@
+{
+  "tenantId": "11111111-2222-3333-4444-555555555555",
+  "subscriptionId": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+  "resourceGroup": "rg-governance-example",
+  "location": "eastus2",
+  "purviewAccount": "contosoPurview",
+  "purviewResourceGroup": "rg-governance-example",
+  "purviewSubscriptionId": "ffffffff-1111-2222-3333-444444444444",
+  "aiResourceGroup": "rg-ai-example",
+  "aiSubscriptionId": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+  "aiFoundry": {
+    "name": "project-example",
+    "resourceId": "/subscriptions/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/resourceGroups/rg-ai-example/providers/Microsoft.CognitiveServices/accounts/ai-example/projects/project-example"
+  },
+  "foundry": {
+    "resources": [
+      {
+        "name": "project-example",
+        "resourceId": "/subscriptions/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/resourceGroups/rg-ai-example/providers/Microsoft.CognitiveServices/accounts/ai-example",
+        "diagnostics": true,
+        "tags": {
+          "Environment": "Dev",
+          "Owner": "DataGov",
+          "CostCenter": "example001"
+        }
+      },
+      {
+        "name": "project-example-2",
+        "resourceId": "/subscriptions/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/resourceGroups/rg-ai-example-2/providers/Microsoft.CognitiveServices/accounts/ai-example-2/projects/project-example-2",
+        "diagnostics": true,
+        "tags": {
+          "Environment": "Dev",
+          "Owner": "DataGov",
+          "CostCenter": "example002"
+        }
+      }
+    ],
+    "contentSafety": {
+      "endpoint": "",
+      "apiKeySecretRef": {
+        "keyVaultResourceId": "",
+        "secretName": ""
+      },
+      "textBlocklists": [],
+      "harmSeverityThreshold": null
+    }
+  },
+  "fabric": {
+    "workspaces": [
+      {
+        "name": "workspace-example-1",
+        "workspaceId": "11111111-aaaa-bbbb-cccc-222222222222",
+        "workspaceUrl": "https://app.powerbi.com/groups/11111111-aaaa-bbbb-cccc-222222222222",
+        "scanName": "scan-example-1",
+        "lakehouses": [
+          {
+            "name": "bronze",
+            "sensitivityLabel": "Personal"
+          },
+          {
+            "name": "silver",
+            "sensitivityLabel": "Confidential\\All Employees"
+          }
+        ]
+      },
+      {
+        "name": "workspace-example-2",
+        "workspaceId": "33333333-dddd-eeee-ffff-444444444444",
+        "workspaceUrl": "https://app.powerbi.com/groups/33333333-dddd-eeee-ffff-444444444444",
+        "scanName": "scan-example-2",
+        "lakehouses": [
+          {
+            "name": "bronze",
+            "sensitivityLabel": "Public"
+          },
+          {
+            "name": "silver",
+            "sensitivityLabel": "Public"
+          },
+          {
+            "name": "gold",
+            "sensitivityLabel": "Public"
+          }
+        ]
+      }
+    ]
+  },
+  "logAnalyticsWorkspaceId": "55555555-6666-7777-8888-999999999999",
+  "dataSources": [],
+  "scans": [],
+  "dlpPolicy": {
+    "name": "AI Egress Control",
+    "mode": "Enforce",
+    "locations": {
+      "Exchange": "All",
+      "SharePoint": "All",
+      "OneDrive": "All"
+    },
+    "rules": [
+      {
+        "name": "Block Sensitive Data to AI Destinations",
+        "sensitiveInfoTypes": [
+          {
+            "name": "Credit Card Number",
+            "count": 1,
+            "confidence": 85
+          },
+          {
+            "name": "U.S. Social Security Number (SSN)",
+            "count": 1,
+            "confidence": 85
+          }
+        ],
+        "blockAccess": true,
+        "notifyUser": true
+      }
+    ]
+  },
+  "labels": [
+    {
+      "name": "ExampleConfidential",
+      "publishPolicyName": "Publish: Confidential",
+      "encryptionEnabled": false,
+      "publishScopes": {
+        "Exchange": "All",
+        "SharePoint": "All",
+        "OneDrive": "All"
+      }
+    }
+  ],
+  "retentionPolicies": [],
+  "activityExport": null,
+  "defenderForAI": {
+    "enableDefenderForCloudPlans": [
+      "CognitiveServices",
+      "Storage",
+      "Containers"
+    ],
+    "logAnalyticsWorkspaceId": "55555555-6666-7777-8888-999999999999",
+    "diagnosticCategories": [
+      "Audit",
+      "RequestResponse",
+      "AllMetrics"
+    ]
+  }
+}

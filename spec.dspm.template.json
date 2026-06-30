@@ -1,0 +1,88 @@
+{
+  "tenantId": "",
+  "subscriptionId": "",
+  "resourceGroup": "",
+  "location": "eastus2",
+  "purviewAccount": "",
+  "purviewResourceGroup": "",
+  "purviewSubscriptionId": "",
+  "aiResourceGroup": "",
+  "aiSubscriptionId": "",
+  "aiFoundry": {
+    "name": "",
+    "resourceId": ""
+  },
+  "foundry": {
+    "resources": [],
+    "contentSafety": {
+      "endpoint": "",
+      "apiKeySecretRef": {
+        "keyVaultResourceId": "",
+        "secretName": ""
+      },
+      "textBlocklists": [],
+      "harmSeverityThreshold": null
+    }
+  },
+  "fabric": {
+    "workspaces": []
+  },
+  "logAnalyticsWorkspaceId": "",
+  "dataSources": [],
+  "scans": [],
+  "dlpPolicy": {
+    "name": "AI Egress Control",
+    "mode": "Enforce",
+    "locations": {
+      "Exchange": "All",
+      "SharePoint": "All",
+      "OneDrive": "All"
+    },
+    "rules": [
+      {
+        "name": "Block Sensitive Data to AI Destinations",
+        "sensitiveInfoTypes": [
+          {
+            "name": "Credit Card Number",
+            "count": 1,
+            "confidence": 85
+          },
+          {
+            "name": "U.S. Social Security Number (SSN)",
+            "count": 1,
+            "confidence": 85
+          }
+        ],
+        "blockAccess": true,
+        "notifyUser": true
+      }
+    ]
+  },
+  "labels": [
+    {
+      "name": "NewSemiConfidential",
+      "publishPolicyName": "Publish: Confidential",
+      "encryptionEnabled": false,
+      "publishScopes": {
+        "Exchange": "All",
+        "SharePoint": "All",
+        "OneDrive": "All"
+      }
+    }
+  ],
+  "retentionPolicies": [],
+  "activityExport": null,
+  "defenderForAI": {
+    "enableDefenderForCloudPlans": [
+      "CognitiveServices",
+      "Storage",
+      "Containers"
+    ],
+    "logAnalyticsWorkspaceId": "",
+    "diagnosticCategories": [
+      "Audit",
+      "RequestResponse",
+      "AllMetrics"
+    ]
+  }
+}
